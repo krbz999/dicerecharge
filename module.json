@@ -8,6 +8,6 @@
     "compatibleCoreVersion": "9",
     "esmodules": [
 		"./setup.js",
-		"./scripts/custom-recharge.mjs",
+		"./scripts/custom-recharge.mjs"
 	]
 }
