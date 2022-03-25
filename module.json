@@ -2,6 +2,7 @@
     "name": "dicerecharge",
     "title": "Zhell's Formulaic Recharging",
     "description": "Adds a field for recharging items using dice formula.",
+    "system": ["dnd5e"],
     "version": "1.00",
     "author": "Zhell",
     "minimumCoreVersion": "9",
@@ -9,5 +10,8 @@
     "esmodules": [
 		"./setup.js",
 		"./scripts/custom-recharge.mjs"
-	]
+    ],
+    "url": "https://github.com/krbz999/dicerecharge",
+    "manifest": "",
+    "download": "",
 }
