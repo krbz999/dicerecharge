@@ -3,7 +3,7 @@
     "title": "Zhell's Formulaic Recharging",
     "description": "Adds a field for recharging items using dice formula.",
     "system": ["dnd5e"],
-    "version": "1.00",
+    "version": "v1.0.0",
     "author": "Zhell",
     "minimumCoreVersion": "9",
     "compatibleCoreVersion": "9",
