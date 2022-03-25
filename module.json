@@ -1,23 +1,13 @@
 {
-    "name": "fvtt-dual-track-module",
-    "title": "FVTT Dual-Track Module Template",
-    "description": "A template repository.",
-    "system": [],
-    "version": "1.0.0",
-    "author": "",
-    "authors": [
-    ],
-    "esmodules": [
-        "scripts/module.mjs"
-    ],
-    "languages": [
-    ],
-    "styles": [
-    ],
-    "socket": false,
-    "url": "",
-    "manifest": "",
-    "download": "",
+    "name": "dicerecharge",
+    "title": "Zhell's Formulaic Recharging",
+    "description": "Adds a field for recharging items using dice formula.",
+    "version": "1.00",
+    "author": "Zhell",
     "minimumCoreVersion": "9",
-    "compatibleCoreVersion": "9"
+    "compatibleCoreVersion": "9",
+    "esmodules": [
+		"./setup.js",
+		"./scripts/custom-recharge.mjs",
+	]
 }
