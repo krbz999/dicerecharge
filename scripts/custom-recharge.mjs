@@ -32,7 +32,7 @@ Hooks.on("renderItemSheet5e", (itemSheet, html) => {
 Hooks.on("renderItemSheet5e", (itemSheet, html) => {
 	if(!game.settings.get(MODULE_NAME, SETTING_NAMES.DESTROY_ENABLED)) return;
 	
-	if(!Object.keys(CONFIG.DND5E.limitedUsePeriods).includes(itemSheet.item?.getChatData().uses.per)) return;
+	if(!Object.keys(CONFIG.DND5E.limitedUsePeriods).includes(itemSheet.item?.getChatData().uses?.per)) return;
 	
 	let destroy = itemSheet.item.getFlag(MODULE_NAME, MODULE_DESTROY.DESTROY) ?? {check: false, die: "d20", threshold: 1};
 
@@ -181,17 +181,13 @@ export class DiceRecharge {
 	
 	
 	static _flagMessages = async (itemObject) => {
-		//console.log(itemObject);
 		let msgs = Array.from(game.messages).slice(-15);
 		for(let msg of msgs){
 			const html = await msg.getHTML();
 			const itemId = html[0].querySelector(".dnd5e.chat-card.item-card")?.getAttribute("data-item-id");
-			//console.log(itemObject._id, itemId);
 			if(itemObject._id === itemId){
 				await msg.setFlag("dnd5e", "itemData", itemObject);
-				//console.log("--message flagged--");
 			}
 		}
 	}
-	
 }
