@@ -73,7 +73,7 @@ Hooks.on("updateItem", (item, diff, _, userId) => {
 	// dont even bother if Destruction is completely disabled.
 	if(!game.settings.get(MODULE_NAME, SETTING_NAMES.DESTROY_ENABLED)) return;
 	
-	const flag = item.getFlag(MODULE_NAME, MODULE_DESTROY.DESTROY);
+	const flag = item.getFlag(MODULE_NAME, MODULE_DESTROY.DESTROY) ?? {check: false};
 	if(userId !== game.user.id) return;
 	if(!flag[MODULE_DESTROY.CHECK]) return;
 	if(diff.data?.uses?.value !== 0 && diff.data?.uses?.value !== null) return;
