@@ -1,4 +1,4 @@
-import { MODULE_NAME } from "./const.mjs";
+import { MODULE_NAME, APPLICABLE_ITEM_TYPES } from "./const.mjs";
 
 export const SETTING_NAMES = {
 	DICE_ROLL: "diceRoll",
@@ -38,4 +38,14 @@ function _registerSettings(){
 		default: true
 	});
 	
+	for(let type of APPLICABLE_ITEM_TYPES.OPTIONAL){
+		game.settings.register(MODULE_NAME, type, {
+			name: `Destroy ${type.titleCase()}.`,
+			hint: `If checked, the item destructon feature is enabled for ${type.titleCase()}-type items.`,
+			scope: "world",
+			config: true,
+			type: Boolean,
+			default: false
+		});
+	}
 }
