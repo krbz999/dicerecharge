@@ -1,9 +1,9 @@
 {
     "name": "dicerecharge",
     "title": "Z's Formulaic Recharging",
-    "description": "Adds a field for recharging items using dice formula.",
+    "description": "Adds functionality for recharging items or features using dice formula, and destroying items that reach zero uses.",
     "system": ["dnd5e"],
-    "version": "v2.0.3",
+    "version": "v2.0.4",
     "author": "Zhell",
     "minimumCoreVersion": "9",
     "compatibleCoreVersion": "9",

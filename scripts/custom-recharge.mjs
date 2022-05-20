@@ -74,18 +74,6 @@ export class DiceRecharge {
 		return actor.updateEmbeddedDocuments("Item", updates);
 	}
 	
-	/* Flag most recent messages when an item is destroyed so they still work. */
-	static _flagMessages = async (itemObject) => {
-		let msgs = Array.from(game.messages).slice(-15);
-		for(let msg of msgs){
-			const html = await msg.getHTML();
-			const itemId = html[0].querySelector(".dnd5e.chat-card.item-card")?.getAttribute("data-item-id");
-			if(itemObject._id === itemId){
-				await msg.setFlag("dnd5e", "itemData", itemObject);
-			}
-		}
-	}
-	
 	/* Figure out if the item's type is allowed to be destroyed. */
 	static _applicableItemType = (item) => {
 		/* The item's type. */
@@ -242,7 +230,7 @@ export class DiceRecharge {
 							
 							// destroy item in the preferred way:
 							if(total <= threshold){
-								await DiceRecharge._flagMessages(item.toObject());
+								//await DiceRecharge._flagMessages(item.toObject());
 								if(game.settings.get(MODULE_NAME, SETTING_NAMES.DESTROY_MANUAL)) await item.deleteDialog();
 								else await item.delete();
 							}
@@ -252,7 +240,7 @@ export class DiceRecharge {
 								speaker: ChatMessage.getSpeaker({actor: item.parent}),
 								content: `${item.name} was destroyed...`
 							});
-							await DiceRecharge._flagMessages(item.toObject());
+							//await DiceRecharge._flagMessages(item.toObject());
 							await item.delete();
 						}
 					}
@@ -296,3 +284,27 @@ Hooks.on("preUpdateItem", (item, diff) => {
 	if(oldValue !== undefined && newValue !== undefined) diff.oldValue = oldValue;
 });
 
+/* Flag a message with item data if the item is set to be destroyed. */
+Hooks.on("createChatMessage", async (msg) => {
+	const {user, content} = msg.data;
+	if(game.user.id !== user) return;
+	
+	// actor and their item.
+	const actorIndex = content.indexOf("data-actor-id");
+	const itemIndex = content.indexOf("data-item-id");
+	if(actorIndex === -1 || itemIndex === -1) return;
+	const actorId = content.substring(actorIndex + 15, actorIndex + 15 + 16);
+	const itemId = content.substring(itemIndex + 14, itemIndex + 14 + 16);
+	
+	// bail out if we couldn't find either.
+	if(!actorId || !itemId) return;
+	
+	// get the item.
+	const item = game.actors.get(actorId)?.items.get(itemId);
+	
+	// check if it is set to destroy.
+	const toDestroy = item?.getFlag(MODULE_NAME, `${MODULE_DESTROY}.${MODULE_CHECK}`) ?? false;
+	
+	// flag the message if it is not already.
+	if(toDestroy && !msg.getFlag("dnd5e", "itemData")) await msg.setFlag("dnd5e", "itemData", item?.toObject());
+});

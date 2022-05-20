@@ -29,6 +29,7 @@ export const TIME_PERIODS = {
 };
 export const DIE_TYPES = {
 	"d2": "d2",
+	"d3": "d3",
 	"d4": "d4",
 	"d6": "d6",
 	"d8": "d8",
