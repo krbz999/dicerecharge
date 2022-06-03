@@ -26,7 +26,7 @@ export class DiceRecharge {
 			if(!Roll.validate(flag)) return false;
 			
 			let {value, max, per} = i.getChatData().uses;
-			if(value >= max) return false;
+			//if(value >= max) return false; // commented out; items may regain negative charges.
 			if(!time_of_day.includes(per)) return false;
 			
 			return true;
@@ -44,18 +44,30 @@ export class DiceRecharge {
 			recoveryFormula = Roll.replaceFormulaData(recoveryFormula, actor.getRollData());
 			const rechargingRoll = new Roll(recoveryFormula);
 			const {total} = await rechargingRoll.evaluate({async: true});
+			
+			// skip this item if it rolled a positive result but was already at max.
+			if(value === max && total > 0) continue;
+			
+			// skip this item if it rolled a negative result but was already at zero.
+			if(value === 0 && total < 0) continue;
+			
+			// add to table.
+			const newValue = Math.clamped(value + total, 0, max);
 			table_body += `
 				<tr>
 					<td>${item.name}</td>
 					<td style="text-align: center">${value}</td>
-					<td style="text-align: center">${Math.min(value + total, max)}</td>
+					<td style="text-align: center">${newValue}</td>
 				</tr>`;
 			diceRolls.push([rechargingRoll, item.name]);
-			updates.push({_id: item.id, "data.uses.value": Math.min(max, value + total)});
+			updates.push({_id: item.id, "data.uses.value": newValue});
 		}
 		
+		// bail out if there were no updates.
+		if(updates.length < 1) return;
+		
 		// Show the table of recharges or show each item roll individually.
-		if(!roll_dice && rechargingItems.length > 1){
+		if(!roll_dice && updates.length > 1){
 			for(let dr of diceRolls) game.dice3d?.showForRoll(dr[0], game.user, true);
 			await ChatMessage.create({
 				user: game.user.id,
@@ -64,11 +76,13 @@ export class DiceRecharge {
 				content: `${CONST_TABLE.HEADER}${table_body}${CONST_TABLE.FOOTER}`
 			});
 		}else{
-			for(let dr of diceRolls) dr[0].toMessage({
-				user: game.user.id,
-				flavor: `${dr[1]} recharges`,
-				speaker: ChatMessage.getSpeaker({actor})
-			});
+			for(let [roll, name] of diceRolls){
+				roll.toMessage({
+					user: game.user.id,
+					flavor: `${name} recharges`,
+					speaker: ChatMessage.getSpeaker({actor})
+				});
+			}
 		}
 		
 		return actor.updateEmbeddedDocuments("Item", updates);
@@ -156,7 +170,7 @@ export class DiceRecharge {
 					name="flags.${MODULE_NAME}.${MODULE_DESTROY}.${MODULE_DIE}"
 					${!check ? "disabled" : ""}
 				>
-				` + Object.entries(DIE_TYPES).reduce( (acc, e) => acc += `<option value="${e[0]}" ${die === e[0] ? "selected" : ""}>${e[1]}</option>`, ``) + `
+				` + Object.entries(DIE_TYPES).reduce( (acc, [key, value]) => acc += `<option value="${key}" ${die === key ? "selected" : ""}>${value}</option>`, ``) + `
 				</select>
 				<span class="sep">&le;&nbsp;</span>
 				<input
@@ -230,17 +244,15 @@ export class DiceRecharge {
 							
 							// destroy item in the preferred way:
 							if(total <= threshold){
-								//await DiceRecharge._flagMessages(item.toObject());
 								if(game.settings.get(MODULE_NAME, SETTING_NAMES.DESTROY_MANUAL)) await item.deleteDialog();
 								else await item.delete();
 							}
-						} else {
+						}else{
 							await ChatMessage.create({
 								user: game.user.id,
 								speaker: ChatMessage.getSpeaker({actor: item.parent}),
 								content: `${item.name} was destroyed...`
 							});
-							//await DiceRecharge._flagMessages(item.toObject());
 							await item.delete();
 						}
 					}
@@ -253,7 +265,7 @@ export class DiceRecharge {
 }
 
 /* Add "dawn" and "dusk" recharge methods. */
-Hooks.on("ready", () => {
+Hooks.once("ready", () => {
 	CONFIG.DND5E.limitedUsePeriods = mergeObject(CONFIG.DND5E.limitedUsePeriods, TIME_PERIODS);
 });
 
@@ -264,7 +276,7 @@ Hooks.on("renderItemSheet5e", DiceRecharge._addDestructionField);
 Hooks.on("renderItemSheet5e", DiceRecharge._addChargeRecoveryField);
 
 /* Recharge items on rest. */
-Hooks.on("restCompleted", async (actor, data) => {
+Hooks.on("dnd5e.restCompleted", async (actor, data) => {
 	if(!data.newDay || !actor) return;
 	DiceRecharge.rechargeItems(actor);
 });

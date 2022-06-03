@@ -3,14 +3,13 @@
     "title": "Z's Formulaic Recharging",
     "description": "Adds functionality for recharging items or features using dice formula, and destroying items that reach zero uses.",
     "system": ["dnd5e"],
-    "version": "v2.0.4",
+    "version": "v2.0.5",
     "author": "Zhell",
     "minimumCoreVersion": "9",
     "compatibleCoreVersion": "9",
     "esmodules": [
 		"./setup.js",
-		"./scripts/custom-recharge.mjs",
-		"./scripts/api.mjs"
+		"./scripts/custom-recharge.mjs"
     ],
     "url": "https://github.com/krbz999/dicerecharge",
     "manifest": "https://github.com/krbz999/dicerecharge/releases/latest/download/module.json",
