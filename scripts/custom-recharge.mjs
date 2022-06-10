@@ -1,15 +1,24 @@
-import { SETTING_NAMES } from "./settings.mjs";
-import { MODULE_NAME } from "./const.mjs";
-import { MODULE_FORMULA } from "./const.mjs";
-import { MODULE_DESTROY, MODULE_CHECK, MODULE_DIE, MODULE_THRESHOLD } from "./const.mjs";
-import { CONST_TABLE } from "./const.mjs";
-import { APPLICABLE_ITEM_TYPES } from "./const.mjs";
-import { TIME_PERIODS, DIE_TYPES, MODULE_ALWAYS, MODULE_DEFAULT } from "./const.mjs";
-
-
-
+import { CONSTS } from "./const.mjs";
 
 export class DiceRecharge {
+	
+	/* Remove all charges from actor's items. */
+	static nullifyCharges = async (actor) => {
+		const updates = actor.items.filter(i => i.hasLimitedUses).map(i => ({
+			_id: i.id,
+			"data.uses.value": 0
+		}));
+		await actor.updateEmbeddedDocuments("Item", updates);
+	}
+	
+	/* Set all charges to maximum on an actor. */
+	static maximizeCharges = async (actor) => {
+		const updates = actor.items.filter(i => i.hasLimitedUses).map(i => ({
+			_id: i.id,
+			"data.uses.value": i.getChatData().uses.max
+		}));
+		await actor.updateEmbeddedDocuments("Item", updates);
+	}
 	
 	/* Request a recharge of magic items */
 	static rechargeItems = async (actor, time) => {
@@ -17,12 +26,12 @@ export class DiceRecharge {
 		const time_of_day = DiceRecharge._moduleTimePeriods().includes(time) ? [time] : DiceRecharge._moduleTimePeriods();
 		
 		// get visual setting:
-		const roll_dice = game.settings.get(MODULE_NAME, SETTING_NAMES.DICE_ROLL);
+		const roll_dice = game.settings.get(CONSTS.MODULE_NAME, CONSTS.SETTING_NAMES.DICE_ROLL);
 		
 		// get items that can recharge:
 		const rechargingItems = actor.items.filter(i => {
 			
-			let flag = i.getFlag(MODULE_NAME, MODULE_FORMULA) ?? "";
+			let flag = i.getFlag(CONSTS.MODULE_NAME, CONSTS.FORMULA) ?? "";
 			if(!Roll.validate(flag)) return false;
 			
 			let {value, max, per} = i.getChatData().uses;
@@ -40,7 +49,7 @@ export class DiceRecharge {
 		let table_body = "";
 		for(let item of rechargingItems){
 			const {value, max} = item.getChatData().uses;
-			let recoveryFormula = item.getFlag(MODULE_NAME, MODULE_FORMULA) ?? "0";
+			let recoveryFormula = item.getFlag(CONSTS.MODULE_NAME, CONSTS.FORMULA) ?? "0";
 			recoveryFormula = Roll.replaceFormulaData(recoveryFormula, actor.getRollData());
 			const rechargingRoll = new Roll(recoveryFormula);
 			const {total} = await rechargingRoll.evaluate({async: true});
@@ -73,7 +82,7 @@ export class DiceRecharge {
 				user: game.user.id,
 				speaker: ChatMessage.getSpeaker({actor, alias: "Magic Items"}),
 				flavor: `${actor.name}'s magic items recharge:`,
-				content: `${CONST_TABLE.HEADER}${table_body}${CONST_TABLE.FOOTER}`
+				content: `${CONSTS.TABLE.HEADER}${table_body}${CONSTS.TABLE.FOOTER}`
 			});
 		}else{
 			for(let [roll, name] of diceRolls){
@@ -95,11 +104,11 @@ export class DiceRecharge {
 		if(!itemType) return false;
 		
 		/* Default allowed item types. */
-		const allowedTypes = new Set(APPLICABLE_ITEM_TYPES.ALWAYS);
+		const allowedTypes = new Set(CONSTS.APPLICABLE_ITEM_TYPES.ALWAYS);
 		
 		/* Add optional item types if enabled, else remove them. */
-		for(let optionalType of APPLICABLE_ITEM_TYPES.OPTIONAL){
-			if(game.settings.get(MODULE_NAME, optionalType)){
+		for(let optionalType of CONSTS.APPLICABLE_ITEM_TYPES.OPTIONAL){
+			if(game.settings.get(CONSTS.MODULE_NAME, optionalType)){
 				allowedTypes.add(optionalType);
 			} else allowedTypes.delete(optionalType);
 		}
@@ -115,7 +124,7 @@ export class DiceRecharge {
 	
 	/* Get module-added recovery methods. */
 	static _moduleTimePeriods = () => {
-		return Object.keys(TIME_PERIODS);
+		return Object.keys(CONSTS.TIME_PERIODS);
 	}
 	
 	/* Add the charge recovery fields to item sheet. */
@@ -124,7 +133,7 @@ export class DiceRecharge {
 		if(!DiceRecharge._moduleTimePeriods().includes(itemSheet.item?.getChatData().uses?.per)) return;
 		
 		// get the current recovery formula, if any.
-		const recoveryFormula = itemSheet.item.getFlag(MODULE_NAME, MODULE_FORMULA) ?? "";
+		const recoveryFormula = itemSheet.item.getFlag(CONSTS.MODULE_NAME, CONSTS.FORMULA) ?? "";
 		
 		// create the new html element in the item's sheet.
 		const div = document.createElement("div");
@@ -132,7 +141,7 @@ export class DiceRecharge {
 		div.innerHTML = `
 			<label>Recovery formula</label>
 			<div class="form-fields">
-				<input type="text" name="flags.${MODULE_NAME}.${MODULE_FORMULA}" value="${recoveryFormula}" />
+				<input type="text" name="flags.${CONSTS.MODULE_NAME}.${CONSTS.FORMULA}" value="${recoveryFormula}" />
 			</div>`;
 		let per = html[0].querySelector(".form-group.uses-per");
 		per.parentNode.insertBefore(div, per.nextSibling);
@@ -141,7 +150,7 @@ export class DiceRecharge {
 	/* Add the destruction fields to item sheet. */
 	static _addDestructionField = (itemSheet, html) => {
 		// dont even bother if Destruction is completely disabled.
-		if(!game.settings.get(MODULE_NAME, SETTING_NAMES.DESTROY_ENABLED)) return;
+		if(!game.settings.get(CONSTS.MODULE_NAME, CONSTS.SETTING_NAMES.DESTROY_ENABLED)) return;
 		
 		// dont even bother if the item's type is not allowed.
 		if(!DiceRecharge._applicableItemType(itemSheet.item)) return;
@@ -150,9 +159,9 @@ export class DiceRecharge {
 		if(!DiceRecharge._validRecoveryMethod(itemSheet.item)) return;
 		
 		// get the current destruction configuration, if any.
-		const check = itemSheet.item.getFlag(MODULE_NAME, `${MODULE_DESTROY}.${MODULE_CHECK}`) ?? false;
-		const die = itemSheet.item.getFlag(MODULE_NAME, `${MODULE_DESTROY}.${MODULE_DIE}`) ?? MODULE_DEFAULT;
-		const threshold = itemSheet.item.getFlag(MODULE_NAME, `${MODULE_DESTROY}.${MODULE_THRESHOLD}`) ?? 1;
+		const check = itemSheet.item.getFlag(CONSTS.MODULE_NAME, `${CONSTS.DESTROY}.${CONSTS.CHECK}`) ?? false;
+		const die = itemSheet.item.getFlag(CONSTS.MODULE_NAME, `${CONSTS.DESTROY}.${CONSTS.DIE}`) ?? CONSTS.DEFAULT;
+		const threshold = itemSheet.item.getFlag(CONSTS.MODULE_NAME, `${CONSTS.DESTROY}.${CONSTS.THRESHOLD}`) ?? 1;
 		
 		// create the new html element in the item's sheet.
 		const div = document.createElement("div");
@@ -162,25 +171,25 @@ export class DiceRecharge {
 			<div class="form-fields">
 				<input
 					type="checkbox"
-					name="flags.${MODULE_NAME}.${MODULE_DESTROY}.${MODULE_CHECK}"
+					name="flags.${CONSTS.MODULE_NAME}.${CONSTS.DESTROY}.${CONSTS.CHECK}"
 					${check ? "checked" : ""}
 				>
 				<span class="sep">Destroyed&nbsp;if&nbsp;</span>
 				<select
-					name="flags.${MODULE_NAME}.${MODULE_DESTROY}.${MODULE_DIE}"
+					name="flags.${CONSTS.MODULE_NAME}.${CONSTS.DESTROY}.${CONSTS.DIE}"
 					${!check ? "disabled" : ""}
 				>
-				` + Object.entries(DIE_TYPES).reduce( (acc, [key, value]) => acc += `<option value="${key}" ${die === key ? "selected" : ""}>${value}</option>`, ``) + `
+				` + Object.entries(CONSTS.DIE_TYPES).reduce( (acc, [key, value]) => acc += `<option value="${key}" ${die === key ? "selected" : ""}>${value}</option>`, ``) + `
 				</select>
 				<span class="sep">&le;&nbsp;</span>
 				<input
 					type="number"
-					name="flags.${MODULE_NAME}.${MODULE_DESTROY}.${MODULE_THRESHOLD}"
+					name="flags.${CONSTS.MODULE_NAME}.${CONSTS.DESTROY}.${CONSTS.THRESHOLD}"
 					data-dtype="Number"
-					value="${(die === MODULE_ALWAYS || !check) ? "" : threshold ? threshold : 1}"
+					value="${(die === CONSTS.ALWAYS || !check) ? "" : threshold ? threshold : 1}"
 					min="1"
 					oninput="validity.valid || (value=1)"
-					${(die === MODULE_ALWAYS || !check) ? "disabled" : ""}
+					${(die === CONSTS.ALWAYS || !check) ? "disabled" : ""}
 				>
 			</div>`;
 		let per = html[0].querySelector(".form-group.uses-per");
@@ -189,7 +198,7 @@ export class DiceRecharge {
 	
 	static _destroyItems = (item, diff, _, userId) => {
 		// dont even bother if Destruction is completely disabled.
-		if(!game.settings.get(MODULE_NAME, SETTING_NAMES.DESTROY_ENABLED)) return;
+		if(!game.settings.get(CONSTS.MODULE_NAME, CONSTS.SETTING_NAMES.DESTROY_ENABLED)) return;
 		
 		// dont even bother if the item's type is not allowed.
 		if(!DiceRecharge._applicableItemType(item)) return;
@@ -198,7 +207,7 @@ export class DiceRecharge {
 		if(userId !== game.user.id) return;
 		
 		// dont even bother if the item is not set to be destroyed.
-		if(!item.getFlag(MODULE_NAME, `${MODULE_DESTROY}.${MODULE_CHECK}`)) return;
+		if(!item.getFlag(CONSTS.MODULE_NAME, `${CONSTS.DESTROY}.${CONSTS.CHECK}`)) return;
 		
 		// dont even bother if the item update was not triggered by the item hitting 0 or null charges.
 		if(diff.data?.uses?.value !== 0 && diff.data?.uses?.value !== null) return;
@@ -213,11 +222,11 @@ export class DiceRecharge {
 		if(!item.parent) return;
 		
 		// get the values we need to use a lot.
-		const die = item.getFlag(MODULE_NAME, `${MODULE_DESTROY}.${MODULE_DIE}`) ?? MODULE_DEFAULT;
-		const threshold = item.getFlag(MODULE_NAME, `${MODULE_DESTROY}.${MODULE_THRESHOLD}`) ?? 1;
+		const die = item.getFlag(CONSTS.MODULE_NAME, `${CONSTS.DESTROY}.${CONSTS.DIE}`) ?? CONSTS.DEFAULT;
+		const threshold = item.getFlag(MODULE_NAME, `${CONSTS.DESTROY}.${CONSTS.THRESHOLD}`) ?? 1;
 		
 		// determine if the item should roll for destruction or skip it (i.e., if die is set to "Always").
-		const roll_to_destroy = die !== MODULE_ALWAYS;
+		const roll_to_destroy = die !== CONSTS.ALWAYS;
 		
 		// create the dialog.
 		new Dialog({
@@ -244,7 +253,7 @@ export class DiceRecharge {
 							
 							// destroy item in the preferred way:
 							if(total <= threshold){
-								if(game.settings.get(MODULE_NAME, SETTING_NAMES.DESTROY_MANUAL)) await item.deleteDialog();
+								if(game.settings.get(CONSTS.MODULE_NAME, CONSTS.SETTING_NAMES.DESTROY_MANUAL)) await item.deleteDialog();
 								else await item.delete();
 							}
 						}else{
@@ -262,11 +271,46 @@ export class DiceRecharge {
 		}).render(true, {height: "100%"});
 	}
 	
+	static _flagMessages = async (message) => {
+		const {user, content} = message.data;
+		if(game.user.id !== user) return;
+		
+		// actor and their item.
+		const actorIndex = content.indexOf("data-actor-id");
+		const itemIndex = content.indexOf("data-item-id");
+		if(actorIndex === -1 || itemIndex === -1) return;
+		const actorId = content.substring(actorIndex + 15, actorIndex + 15 + 16);
+		const itemId = content.substring(itemIndex + 14, itemIndex + 14 + 16);
+		
+		// bail out if we couldn't find either.
+		if(!actorId || !itemId) return;
+		
+		// get the item.
+		const item = game.actors.get(actorId)?.items.get(itemId);
+		
+		// check if it is set to destroy.
+		const toDestroy = item?.getFlag(CONSTS.MODULE_NAME, `${CONSTS.DESTROY}.${CONSTS.CHECK}`) ?? false;
+		
+		// flag the message if it is not already.
+		if(toDestroy && !message.getFlag("dnd5e", "itemData")) await message.setFlag("dnd5e", "itemData", item?.toObject());
+	}
+	
+	/* Remember old values when an item has charges changed. */
+	static _rememberOldValue = (item, diff) => {
+		// get the item's old value.
+		let oldValue = item.data?.data?.uses?.value;
+		
+		// gets the item's new value.
+		let newValue = diff?.data?.uses?.value;
+		
+		// save the old value for later if both old and new are defined (null is important).
+		if(oldValue !== undefined && newValue !== undefined) diff.oldValue = oldValue;
+	}
 }
 
 /* Add "dawn" and "dusk" recharge methods. */
 Hooks.once("ready", () => {
-	CONFIG.DND5E.limitedUsePeriods = mergeObject(CONFIG.DND5E.limitedUsePeriods, TIME_PERIODS);
+	CONFIG.DND5E.limitedUsePeriods = mergeObject(CONFIG.DND5E.limitedUsePeriods, CONSTS.TIME_PERIODS);
 });
 
 /* Add destruction fields. */
@@ -285,38 +329,7 @@ Hooks.on("dnd5e.restCompleted", async (actor, data) => {
 Hooks.on("updateItem", DiceRecharge._destroyItems);
 
 /* Remember what the old value was. */
-Hooks.on("preUpdateItem", (item, diff) => {
-	// get the item's old value.
-	let oldValue = item.data?.data?.uses?.value;
-	
-	// gets the item's new value.
-	let newValue = diff?.data?.uses?.value;
-	
-	// save the old value for later if both old and new are defined (null is important).
-	if(oldValue !== undefined && newValue !== undefined) diff.oldValue = oldValue;
-});
+Hooks.on("preUpdateItem", DiceRecharge._rememberOldValue);
 
 /* Flag a message with item data if the item is set to be destroyed. */
-Hooks.on("createChatMessage", async (msg) => {
-	const {user, content} = msg.data;
-	if(game.user.id !== user) return;
-	
-	// actor and their item.
-	const actorIndex = content.indexOf("data-actor-id");
-	const itemIndex = content.indexOf("data-item-id");
-	if(actorIndex === -1 || itemIndex === -1) return;
-	const actorId = content.substring(actorIndex + 15, actorIndex + 15 + 16);
-	const itemId = content.substring(itemIndex + 14, itemIndex + 14 + 16);
-	
-	// bail out if we couldn't find either.
-	if(!actorId || !itemId) return;
-	
-	// get the item.
-	const item = game.actors.get(actorId)?.items.get(itemId);
-	
-	// check if it is set to destroy.
-	const toDestroy = item?.getFlag(MODULE_NAME, `${MODULE_DESTROY}.${MODULE_CHECK}`) ?? false;
-	
-	// flag the message if it is not already.
-	if(toDestroy && !msg.getFlag("dnd5e", "itemData")) await msg.setFlag("dnd5e", "itemData", item?.toObject());
-});
+Hooks.on("createChatMessage", DiceRecharge._flagMessages);
