@@ -30,13 +30,13 @@ export class DiceRecharge {
 		
 		// get items that can recharge:
 		const rechargingItems = actor.items.filter(i => {
+			if(!i.hasLimitedUses) return false;
 			
 			let flag = i.getFlag(CONSTS.MODULE_NAME, CONSTS.FORMULA) ?? "";
 			if(!Roll.validate(flag)) return false;
 			
-			let {value, max, per} = i.getChatData().uses;
-			//if(value >= max) return false; // commented out; items may regain negative charges.
-			if(!time_of_day.includes(per)) return false;
+			let recovery_method = getProperty(i, "data.data.uses.per");
+			if(!time_of_day.includes(recovery_method)) return false;
 			
 			return true;
 		});
@@ -77,16 +77,16 @@ export class DiceRecharge {
 		
 		// Show the table of recharges or show each item roll individually.
 		if(!roll_dice && updates.length > 1){
-			for(let dr of diceRolls) game.dice3d?.showForRoll(dr[0], game.user, true);
+			for(let [roll, name] of diceRolls) game.dice3d?.showForRoll(roll, game.user, true);
 			await ChatMessage.create({
 				user: game.user.id,
-				speaker: ChatMessage.getSpeaker({actor, alias: "Magic Items"}),
+				speaker: ChatMessage.getSpeaker({actor}),
 				flavor: `${actor.name}'s magic items recharge:`,
 				content: `${CONSTS.TABLE.HEADER}${table_body}${CONSTS.TABLE.FOOTER}`
 			});
 		}else{
 			for(let [roll, name] of diceRolls){
-				roll.toMessage({
+				await roll.toMessage({
 					user: game.user.id,
 					flavor: `${name} recharges`,
 					speaker: ChatMessage.getSpeaker({actor})
