@@ -4,9 +4,14 @@
     "description": "Adds functionality for recharging items or features using dice formula, and destroying items that reach zero uses.",
     "system": ["dnd5e"],
     "version": "v2.0.6",
-    "author": "Zhell",
+    "authors": [{
+		"name": "Zhell",
+		"url": "https://github.com/krbz999",
+		"discord": "Zhell#9201"
+	}],
     "minimumCoreVersion": "9",
     "compatibleCoreVersion": "9",
+	"minimumSystemVersion": "1.6.0",
     "esmodules": [
 		"./setup.js",
 		"./scripts/custom-recharge.mjs"
