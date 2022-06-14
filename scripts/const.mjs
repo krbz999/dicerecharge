@@ -41,7 +41,7 @@ export const CONSTS = {
 		"infty": "Always"
 	},
 	ALWAYS: "infty",
-	DEFAULT: "d20",
+	DEFAULT_DIE: "d20",
 	SETTING_NAMES: {
 		DICE_ROLL: "diceRoll",
 		DESTROY_MANUAL: "manuallyDestroy",
