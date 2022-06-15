@@ -20,5 +20,17 @@
 	"DICERECHARGE.DeleteDialog.AreYouSure": "Are You Sure?",
 	"DICERECHARGE.DeleteDialog.Warning": "This Item will be permanently deleted and cannot be recovered.",
 	"DICERECHARGE.Yes": "Yes",
-	"DICERECHARGE.No": "No"
+	"DICERECHARGE.No": "No",
+	"DICERECHARGE.Settings.DiceRoll.Name": "Individual Dice Rolls",
+	"DICERECHARGE.Settings.DiceRoll.Hint": "Show individual dice rolls for each magic item instead of a table.",
+	"DICERECHARGE.Settings.DestroyEnabled.Name": "Enable Item Destruction",
+	"DICERECHARGE.Settings.DestroyEnabled.Hint": "If unchecked, items will not be destroyed at all.",
+	"DICERECHARGE.Settings.DestroyManual.Name": "Manual Item Destruction",
+	"DICERECHARGE.Settings.DestroyManual.Hint": "If checked, and Item Destruction is also enabled, players will be prompted to delete an item instead of it happening automatically.",
+	"DICERECHARGE.Settings.DestroyItemTypeConsumable.Name": "Destroy Consumables.",
+	"DICERECHARGE.Settings.DestroyItemTypeConsumable.Hint": "If checked, the item destruction feature is enabled for Consumable-type items.",
+	"DICERECHARGE.Settings.DestroyItemTypeFeat.Name": "Destroy Features.",
+	"DICERECHARGE.Settings.DestroyItemTypeFeat.Hint": "If checked, the item destruction feature is enabled for Feature-type items.",
+	"DICERECHARGE.Settings.DestroyItemTypeSpell.Name": "Destroy Spells.",
+	"DICERECHARGE.Settings.DestroyItemTypeSpell.Hint": "If checked, the item destruction feature is enabled for Spell-type items."
 }

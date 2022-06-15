@@ -6,8 +6,8 @@ export function registerSettings() {
 
 function _registerSettings(){
 	game.settings.register(CONSTS.MODULE_NAME, CONSTS.SETTING_NAMES.DICE_ROLL, {
-		name: "Individual Dice Rolls",
-		hint: "Show individual dice rolls for each magic item instead of a table.",
+		name: game.i18n.localize("DICERECHARGE.Settings.DiceRoll.Name"),
+		hint: game.i18n.localize("DICERECHARGE.Settings.DiceRoll.Hint"),
 		scope: "world",
 		config: true,
 		type: Boolean,
@@ -15,8 +15,8 @@ function _registerSettings(){
 	});
 	
 	game.settings.register(CONSTS.MODULE_NAME, CONSTS.SETTING_NAMES.DESTROY_ENABLED, {
-		name: "Enable Item Destruction",
-		hint: "If unchecked, items will not be destroyed at all.",
+		name: game.i18n.localize("DICERECHARGE.Settings.DestroyEnabled.Name"),
+		hint: game.i18n.localize("DICERECHARGE.Settings.DestroyEnabled.Hint"),
 		scope: "world",
 		config: true,
 		type: Boolean,
@@ -24,8 +24,8 @@ function _registerSettings(){
 	});
 	
 	game.settings.register(CONSTS.MODULE_NAME, CONSTS.SETTING_NAMES.DESTROY_MANUAL, {
-		name: "Manual Item Destruction",
-		hint: "If checked, and Item Destruction is also enabled, players will be prompted to delete an item instead of it happening automatically.",
+		name: game.i18n.localize("DICERECHARGE.Settings.DestroyManual.Name"),
+		hint: game.i18n.localize("DICERECHARGE.Settings.DestroyManual.Hint"),
 		scope: "world",
 		config: true,
 		type: Boolean,
@@ -34,8 +34,8 @@ function _registerSettings(){
 	
 	for(let type of CONSTS.APPLICABLE_ITEM_TYPES.OPTIONAL){
 		game.settings.register(CONSTS.MODULE_NAME, type, {
-			name: `Destroy ${type.titleCase()}.`,
-			hint: `If checked, the item destructon feature is enabled for ${type.titleCase()}-type items.`,
+			name: game.i18n.localize(`DICERECHARGE.Settings.DestroyItemType${type.titleCase()}.Name`),
+			hint: game.i18n.localize(`DICERECHARGE.Settings.DestroyItemType${type.titleCase()}.Hint`),
 			scope: "world",
 			config: true,
 			type: Boolean,
