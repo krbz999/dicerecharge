@@ -7,19 +7,6 @@ export const CONSTS = {
 	CHECK: "check",
 	DIE: "die",
 	THRESHOLD: "threshold",
-	TABLE: {
-		HEADER: `
-			<table style="width: 100%; border: none">
-				<thead>
-					<tr>
-						<th style="width: 60%; text-align: center">Magic Item</th>
-						<th style="width: 20%; text-align: center">Old</th>
-						<th style="width: 20%; text-align: center">New</th>
-					</tr>
-				</thead>
-			<tbody>`,
-		FOOTER: `</tbody></table>`
-	},
 	APPLICABLE_ITEM_TYPES: {
 		ALWAYS: ["weapon", "equipment"],
 		OPTIONAL: ["consumable", "spell", "feat"]

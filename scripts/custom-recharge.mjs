@@ -26,7 +26,7 @@ export class DiceRecharge {
 		if(!actor) return;
 		
 		// get me some consts.
-		const {MODULE_NAME, FORMULA, TABLE, SETTING_NAMES} = CONSTS;
+		const {MODULE_NAME, FORMULA, SETTING_NAMES} = CONSTS;
 		
 		// get the time of day triggered.
 		const time_of_day = DiceRecharge._moduleTimePeriods().includes(time) ? [time] : DiceRecharge._moduleTimePeriods();
@@ -105,7 +105,19 @@ export class DiceRecharge {
 				user: game.user.id,
 				speaker: ChatMessage.getSpeaker({actor}),
 				flavor: `${actor.name}'s magic items recharge:`,
-				content: `${TABLE.HEADER}${table_body}${TABLE.FOOTER}`
+				content: `
+					<table style="width: 100%; border: none">
+						<thead>
+							<tr>
+								<th style="width: 60%; text-align: center">${game.i18n.localize("DICERECHARGE.Table.MagicItem")}</th>
+								<th style="width: 20%; text-align: center">${game.i18n.localize("DICERECHARGE.Table.Old")}</th>
+								<th style="width: 20%; text-align: center">${game.i18n.localize("DICERECHARGE.Table.New")}</th>
+							</tr>
+						</thead>
+						<tbody>
+							${table_body}
+						</tbody>
+					</table>`
 			});
 		}else{
 			for(let [roll, name] of diceRolls){
@@ -182,7 +194,7 @@ export class DiceRecharge {
 		const div = document.createElement("div");
 		div.setAttribute("class", "form-group dicerecharge");
 		div.innerHTML = `
-			<label for="dicerecharge-recovery-formula">Recovery formula</label>
+			<label for="dicerecharge-recovery-formula">${game.i18n.localize("DICERECHARGE.ItemSheet.RecoveryFormula")}</label>
 			<div class="form-fields">
 				<input id="dicerecharge-recovery-formula" type="text" name="flags.${MODULE_NAME}.${FORMULA}" value="${recoveryFormula}" />
 			</div>`;
@@ -197,7 +209,7 @@ export class DiceRecharge {
 	/* Add the destruction fields to item sheet. */
 	static _addDestructionField = (itemSheet, html) => {
 		
-		const {MODULE_NAME, SETTING_NAMES, DESTROY, CHECK, DIE, DEFAULT_DIE, THRESHOLD, DIE_TYPES} = CONSTS;
+		const {MODULE_NAME, SETTING_NAMES, DESTROY, CHECK, DIE, DEFAULT_DIE, THRESHOLD, DIE_TYPES, ALWAYS} = CONSTS;
 		
 		// dont even bother if Destruction is completely disabled.
 		if(!game.settings.get(MODULE_NAME, SETTING_NAMES.DESTROY_ENABLED)) return;
@@ -217,14 +229,14 @@ export class DiceRecharge {
 		const div = document.createElement("div");
 		div.setAttribute("class", "form-group destruction");
 		div.innerHTML = `
-			<label>Item Destruction</label>
+			<label>${game.i18n.localize("DICERECHARGE.ItemSheet.ItemDestruction")}</label>
 			<div class="form-fields">
 				<input
 					type="checkbox"
 					name="flags.${MODULE_NAME}.${DESTROY}.${CHECK}"
 					${check ? "checked" : ""}
 				>
-				<span class="sep">Destroyed&nbsp;if&nbsp;</span>
+				<span class="sep">${game.i18n.localize("DICERECHARGE.ItemSheet.DestroyedIf")}</span>
 				<select
 					name="flags.${MODULE_NAME}.${DESTROY}.${DIE}"
 					${!check ? "disabled" : ""}
@@ -246,6 +258,13 @@ export class DiceRecharge {
 		// find the uses.per element and insert the new element after this.
 		const per = html[0].querySelector(".form-group.uses-per");
 		per.parentNode.insertBefore(div, per.nextSibling);
+	}
+	
+	// get destruction prompt message.
+	static _getDestroyPromptMessage = (die, threshold, always) => {
+		if(always) return game.i18n.localize("DICERECHARGE.RollToSurvive.Always");
+		if(threshold > 1) return game.i18n.format("DICERECHARGE.RollToSurvive.ThresholdAboveOne", {die: die, threshold: threshold});
+		return game.i18n.format("DICERECHARGE.RollToSurvive.ThresholdOne", {die: die});
 	}
 	
 	// prompt destruction of an item.
@@ -283,19 +302,19 @@ export class DiceRecharge {
 		
 		// determine if the item should roll for destruction or skip it (i.e., if die is set to "Always").
 		const roll_to_destroy = die !== ALWAYS;
-		const dialogMessage = roll_to_destroy ? `Roll a ${die}; on a ${threshold > 1 ? threshold + " or lower" : threshold}, the item is permanently destroyed.` : `The item is permanently destroyed.`
+		const dialogMessage = DiceRecharge._getDestroyPromptMessage(die, threshold, !roll_to_destroy);
 		
 		// create the dialog.
 		new Dialog({
 			title: item.name,
 			content: `
 				<p style="text-align:center;"><img src="${item.data.img}" style="width: 35%; border: none" /></p><hr>
-				<p>${item.name} has reached zero charges.</p>
+				<p>${game.i18n.format("DICERECHARGE.Item.HasReachedZeroCharges", {itemName: item.name})}</p>
 				<p>${dialogMessage}</p><hr>`,
 			buttons: {
 				roll: {
 					icon: `<i class="fas fa-check"></i>`,
-					label: roll_to_destroy ? `Roll a ${die}` : `Destroy Item`,
+					label: roll_to_destroy ? game.i18n.format("DICERECHARGE.Item.RollDie", {die}) : game.i18n.localize("DICERECHARGE.Item.DestroyItem"),
 					callback: async () => {
 						
 						// get the setting value (boolean).
@@ -313,14 +332,14 @@ export class DiceRecharge {
 
 							// send the roll to chat.
 							roll.toMessage({
-								flavor: survivedDestruction ? `${item.name} survived losing all its charges` : `${item.name} was destroyed...`,
+								flavor: survivedDestruction ? game.i18n.format("DICERECHARGE.Item.Survived", {itemName: item.name}) : game.i18n.format("DICERECHARGE.Item.WasDestroyed", {itemName: item.name}),
 								speaker: ChatMessage.getSpeaker({actor: item.actor})
 							});
 							
 							// destroy item in the preferred way if it did not survive:
 							if(!survivedDestruction){
 								// execute manual or automatic deletion.
-								manualDestruction ? await item.deleteDialog() : await item.delete();
+								await DiceRecharge._deleteItemPrompt(item, manualDestruction);
 							}
 						}
 						// if the item destruction happens always...
@@ -328,15 +347,50 @@ export class DiceRecharge {
 							await ChatMessage.create({
 								user: game.user.id,
 								speaker: ChatMessage.getSpeaker({actor: item.actor}),
-								content: `${item.name} was destroyed...`
+								content: game.i18n.format("DICERECHARGE.Item.WasDestroyed", {itemName: item.name})
 							});
-							manualDestruction ? await item.deleteDialog() : await item.delete();
+							// execute manual or automatic deletion.
+							await DiceRecharge._deleteItemPrompt(item, manualDestruction);
 						}
 					}
 				}
 			},
 			default: "roll"
 		}).render(true, {height: "100%"});
+	}
+	
+	// item delete prompt, either dialog (true) or automatic (false).
+	static _deleteItemPrompt = async (item, manual) => {
+		const {MODULE_NAME} = CONSTS;
+		
+		// if automatic, simply delete.
+		if(!manual) return item.delete({[MODULE_NAME]: true});
+		
+		// if prompted, pop a dialog.
+		const deletion = await new Promise(resolve => {
+			new Dialog({
+				title: game.i18n.format("DICERECHARGE.DeleteDialog.Title", {itemName: item.name}),
+				content: `
+					<p>${game.i18n.localize("DICERECHARGE.DeleteDialog.AreYouSure")}</p>
+					<p>${game.i18n.localize("DICERECHARGE.DeleteDialog.Warning")}</p>`,
+				buttons: {
+					yes: {
+						icon: `<i class="fas fa-check"></i>`,
+						label: game.i18n.localize("DICERECHARGE.Yes"),
+						callback: () => {resolve(true)}
+					},
+					no: {
+						icon: `<i class="fas fa-times"></i>`,
+						label: game.i18n.localize("DICERECHARGE.No"),
+						callback: () => {resolve(false)}
+					}
+				},
+				default: "yes",
+				close: () => {resolve(false)}
+			}).render(true);
+		});
+		if(deletion) return item.delete({[MODULE_NAME]: true});
+		return false;
 	}
 	
 	/* Flag a message with item data if the item is set to be destroyed. */
@@ -382,7 +436,15 @@ export class DiceRecharge {
 	static _setUpLimitedUsePeriods = () => {
 		const periods = duplicate(CONFIG.DND5E.limitedUsePeriods);
 		const {TIME_PERIODS} = CONSTS;
+		
+		// localize
+		TIME_PERIODS["dawn"] = game.i18n.localize("DICERECHARGE.Time.Dawn");
+		TIME_PERIODS["dusk"] = game.i18n.localize("DICERECHARGE.Time.Dusk");
+		
 		CONFIG.DND5E.limitedUsePeriods = mergeObject(periods, TIME_PERIODS);
+		
+		// set up CONSTS.DIE_TYPES.infty while we're at it.
+		CONSTS.DIE_TYPES.infty = game.i18n.localize("DICERECHARGE.ItemSheet.Always");
 	}
 }
 
