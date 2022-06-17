@@ -229,9 +229,10 @@ export class DiceRecharge {
 		const div = document.createElement("div");
 		div.setAttribute("class", "form-group destruction");
 		div.innerHTML = `
-			<label>${game.i18n.localize("DICERECHARGE.ItemSheet.ItemDestruction")}</label>
+			<label for="destructioncheckbox">${game.i18n.localize("DICERECHARGE.ItemSheet.ItemDestruction")}</label>
 			<div class="form-fields">
 				<input
+					id="destructioncheckbox"
 					type="checkbox"
 					name="flags.${MODULE_NAME}.${DESTROY}.${CHECK}"
 					${check ? "checked" : ""}
