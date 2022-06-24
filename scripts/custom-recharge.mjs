@@ -20,35 +20,46 @@ export class DiceRecharge {
 		await actor.updateEmbeddedDocuments("Item", updates);
 	}
 	
-	/* Request a recharge of magic items */
+	/* Request a recharge of a single item. */
+	static rechargeItem = async (item, notif = true) => {
+		// bail out if invalid item.
+		if(!item) return;
+		
+		// item must be valid for dicerecharge.
+		if(!DiceRecharge._validForRecharging(item)) return;
+		
+		// get recharge values.
+		const [roll, value, max, total] = await DiceRecharge._getRechargeValues(item);
+		
+		// get the new value it would have.
+		const newValue = Math.clamped(value + total, 0, max);
+		
+		// bail out if no change in values.
+		if(value === newValue){
+			if(notif) return ui.notifications.warn(`${item.name} had no change in limited uses.`);
+			else return;
+		}
+		
+		// update the item.
+		await item.update({"data.uses.value": newValue});
+		
+		// display roll message.
+		return DiceRecharge._rechargeRollToMessage(roll, item.name, item.actor);
+	}
+	
+	/* Request a recharge of all items */
 	static rechargeItems = async (actor, time) => {
 		// actor somehow undefined (if this is triggered manually), then bail out.
 		if(!actor) return;
 		
 		// get me some consts.
-		const {MODULE_NAME, FORMULA, SETTING_NAMES} = CONSTS;
-		
-		// get the time of day triggered.
-		const time_of_day = DiceRecharge._moduleTimePeriods().includes(time) ? [time] : DiceRecharge._moduleTimePeriods();
+		const {MODULE_NAME, FORMULA, SETTING_NAMES: {DICE_ROLL}} = CONSTS;
 		
 		// get visual setting:
-		const roll_dice = game.settings.get(MODULE_NAME, SETTING_NAMES.DICE_ROLL);
+		const roll_dice = game.settings.get(MODULE_NAME, DICE_ROLL);
 		
 		// get items that can recharge:
-		const rechargingItems = actor.items.filter(i => {
-			// the item must have limited uses.
-			if(!i.hasLimitedUses) return false;
-			
-			// the item must have a valid formula in the flag.
-			let flag = i.getFlag(MODULE_NAME, FORMULA) ?? "";
-			if(!Roll.validate(flag)) return false;
-			
-			// the item must have a valid recovery method currently set.
-			let recovery_method = getProperty(i, "data.data.uses.per");
-			if(!time_of_day.includes(recovery_method)) return false;
-			
-			return true;
-		});
+		const rechargingItems = actor.items.filter(item => DiceRecharge._validForRecharging(item, time));
 		
 		// if there were no valid items, bail out.
 		if(rechargingItems.length < 1) return;
@@ -58,27 +69,14 @@ export class DiceRecharge {
 		const diceRolls = [];
 		let table_body = "";
 		for(let item of rechargingItems){
-			// get the item's uses values.
-			const {value, max} = item.getChatData().uses;
-			
-			// get the item's recovery formula. This is always valid since we already filtered.
-			const formulaFlag = item.getFlag(MODULE_NAME, FORMULA);
-			
-			// replace formula data with actor roll data.
-			const formula = Roll.replaceFormulaData(formulaFlag, actor.getRollData());
-			
-			// create the roll, evaluate it, and store the total.
-			const rechargingRoll = new Roll(formula);
-			const {total} = await rechargingRoll.evaluate({async: true});
-			
-			// skip this item if it rolled a positive result but was already at max.
-			if(value === max && total > 0) continue;
-			
-			// skip this item if it rolled a negative result but was already at zero.
-			if(value === 0 && total < 0) continue;
+			// get a recharge roll, old value, max value, and roll total.
+			const [roll, value, max, total] = await DiceRecharge._getRechargeValues(item);
 			
 			// get the new value, but set it between 0 and max.
 			const newValue = Math.clamped(value + total, 0, max);
+			
+			// skip this item if no change in values.
+			if(newValue === value) continue;
 			
 			// add to table.
 			table_body += `
@@ -89,7 +87,7 @@ export class DiceRecharge {
 				</tr>`;
 			
 			// push the roll and the item name to array for later.
-			diceRolls.push([rechargingRoll, item.name]);
+			diceRolls.push([roll, item.name]);
 			
 			// push to the updates.
 			updates.push({_id: item.id, "data.uses.value": newValue});
@@ -100,36 +98,78 @@ export class DiceRecharge {
 		
 		// Show the table of recharges or show each item roll individually.
 		if(!roll_dice && updates.length > 1){
-			for(let [roll, name] of diceRolls) game.dice3d?.showForRoll(roll, game.user, true);
+			for(let [showRoll, name] of diceRolls) game.dice3d?.showForRoll(showRoll, game.user, true);
 			await ChatMessage.create({
 				user: game.user.id,
 				speaker: ChatMessage.getSpeaker({actor}),
-				flavor: `${actor.name}'s magic items recharge:`,
+				flavor: game.i18n.format("DICERECHARGE.RechargeMessage.Pluralis", {name: actor.name}),
 				content: `
-					<table style="width: 100%; border: none">
-						<thead>
-							<tr>
-								<th style="width: 60%; text-align: center">${game.i18n.localize("DICERECHARGE.Table.MagicItem")}</th>
-								<th style="width: 20%; text-align: center">${game.i18n.localize("DICERECHARGE.Table.Old")}</th>
-								<th style="width: 20%; text-align: center">${game.i18n.localize("DICERECHARGE.Table.New")}</th>
-							</tr>
-						</thead>
-						<tbody>
-							${table_body}
-						</tbody>
-					</table>`
+				<table style="width: 100%; border: none">
+					<thead><tr>
+							<th style="width: 60%; text-align: center">${game.i18n.localize("DICERECHARGE.Table.MagicItem")}</th>
+							<th style="width: 20%; text-align: center">${game.i18n.localize("DICERECHARGE.Table.Old")}</th>
+							<th style="width: 20%; text-align: center">${game.i18n.localize("DICERECHARGE.Table.New")}</th>
+					</tr></thead>
+					<tbody>${table_body}</tbody>
+				</table>`
 			});
 		}else{
-			for(let [roll, name] of diceRolls){
-				await roll.toMessage({
-					user: game.user.id,
-					flavor: `${name} recharges`,
-					speaker: ChatMessage.getSpeaker({actor})
-				});
+			for(let [showRoll, name] of diceRolls){
+				await DiceRecharge._rechargeRollToMessage(showRoll, name, actor);
 			}
 		}
 		
 		return actor.updateEmbeddedDocuments("Item", updates);
+	}
+	
+	// display roll message for singular item.
+	static _rechargeRollToMessage = async (roll, name, actor) => {
+		return roll.toMessage({
+			user: game.user.id,
+			flavor: game.i18n.format("DICERECHARGE.RechargeMessage.Singular", {name}),
+			speaker: ChatMessage.getSpeaker({actor})
+		});
+	}
+	
+	// recharge a singular item. Return an evaluated roll, and old and new values.
+	static _getRechargeValues = async (item) => {
+		// get the item's uses values.
+		const {value, max} = getProperty(item, "data.data.uses");
+		
+		// get the item's recovery formula.
+		const formulaFlag = item.getFlag(CONSTS.MODULE_NAME, CONSTS.FORMULA);
+		
+		// replace formula data with actor roll data.
+		const formula = Roll.replaceFormulaData(formulaFlag, item.actor.getRollData());
+		
+		// create the roll, evaluate it, and store the total.
+		const roll = new Roll(formula);
+		const {total} = await roll.evaluate({async: true});
+		
+		// return the values.
+		return [roll, value, max, total];
+	}
+	
+	// return true or false whether item is valid for dicerecharge.
+	static _validForRecharging = (item, time) => {
+		// item must be an owned item.
+		if(!item.actor) return false;
+		
+		// the item must have limited uses.
+		if(!item.hasLimitedUses) return false;
+		
+		// the item must have a valid formula in the flag.
+		const flag = item.getFlag(CONSTS.MODULE_NAME, CONSTS.FORMULA) ?? "";
+		if(!Roll.validate(flag)) return false;
+		
+		// get the time of day triggered.
+		const time_of_day = DiceRecharge._moduleTimePeriods().includes(time) ? [time] : DiceRecharge._moduleTimePeriods();
+		
+		// the item must have a valid recovery method currently set.
+		const recovery_method = getProperty(item, "data.data.uses.per");
+		if(!time_of_day.includes(recovery_method)) return false;
+		
+		return true;
 	}
 	
 	// trigger the recharge on a New Day.
@@ -209,10 +249,10 @@ export class DiceRecharge {
 	/* Add the destruction fields to item sheet. */
 	static _addDestructionField = (itemSheet, html) => {
 		
-		const {MODULE_NAME, SETTING_NAMES, DESTROY, CHECK, DIE, DEFAULT_DIE, THRESHOLD, DIE_TYPES, ALWAYS} = CONSTS;
+		const {MODULE_NAME, SETTING_NAMES: {DESTROY_ENABLED}, DESTROY, CHECK, DIE, DEFAULT_DIE, THRESHOLD, DIE_TYPES, ALWAYS} = CONSTS;
 		
 		// dont even bother if Destruction is completely disabled.
-		if(!game.settings.get(MODULE_NAME, SETTING_NAMES.DESTROY_ENABLED)) return;
+		if(!game.settings.get(MODULE_NAME, DESTROY_ENABLED)) return;
 		
 		// dont even bother if the item's type is not allowed.
 		if(!DiceRecharge._applicableItemTypeForDestruction(itemSheet.item)) return;
@@ -264,38 +304,20 @@ export class DiceRecharge {
 	// get destruction prompt message.
 	static _getDestroyPromptMessage = (die, threshold, always) => {
 		if(always) return game.i18n.localize("DICERECHARGE.RollToSurvive.Always");
-		if(threshold > 1) return game.i18n.format("DICERECHARGE.RollToSurvive.ThresholdAboveOne", {die: die, threshold: threshold});
-		return game.i18n.format("DICERECHARGE.RollToSurvive.ThresholdOne", {die: die});
+		if(threshold > 1) return game.i18n.format("DICERECHARGE.RollToSurvive.ThresholdAboveOne", {die, threshold});
+		return game.i18n.format("DICERECHARGE.RollToSurvive.ThresholdOne", {die});
 	}
 	
 	// prompt destruction of an item.
-	static _destroyItems = (item, diff, _, userId) => {
+	static _destroyItems = (item, data, context, userId) => {
+		const {MODULE_NAME, DESTROY, DIE, DEFAULT_DIE, THRESHOLD, ALWAYS,
+			SETTING_NAMES: {DESTROY_ENABLED, DESTROY_MANUAL}} = CONSTS;
 		
-		const {MODULE_NAME, DESTROY, DIE, CHECK, DEFAULT_DIE, THRESHOLD, ALWAYS, SETTING_NAMES} = CONSTS;
-		
-		// dont even bother if Destruction is completely disabled.
-		if(!game.settings.get(MODULE_NAME, SETTING_NAMES.DESTROY_ENABLED)) return;
-		
-		// dont even bother if the item's type is not allowed.
-		if(!DiceRecharge._applicableItemTypeForDestruction(item)) return;
+		// bail out if preUpdate hook has not flagged this for destruction.
+		if(!context[MODULE_NAME].destroy) return;
 		
 		// dont run this for anyone but the one updating the item.
 		if(userId !== game.user.id) return;
-		
-		// dont even bother if the item is not set to be destroyed.
-		if(!item.getFlag(MODULE_NAME, `${DESTROY}.${CHECK}`)) return;
-		
-		// dont even bother if the item update was not triggered by the item hitting 0 or null charges.
-		if(diff.data?.uses?.value !== 0 && diff.data?.uses?.value !== null) return;
-		
-		// dont even bother if the change to 0 or null was also FROM a value of 0 or null.
-		if(diff.oldValue === 0 || diff.oldValue === null) return;
-		
-		// dont even bother if the item actually does not show the destruction config.
-		if(!DiceRecharge._validRecoveryMethodForDestruction(item)) return;
-		
-		// dont even bother if the item is not owned by an actor.
-		if(!item.actor) return;
 		
 		// get the values we need to use a lot.
 		const die = item.getFlag(MODULE_NAME, `${DESTROY}.${DIE}`) ?? DEFAULT_DIE;
@@ -319,7 +341,7 @@ export class DiceRecharge {
 					callback: async () => {
 						
 						// get the setting value (boolean).
-						const manualDestruction = !!game.settings.get(MODULE_NAME, SETTING_NAMES.DESTROY_MANUAL);
+						const manualDestruction = !!game.settings.get(MODULE_NAME, DESTROY_MANUAL);
 						
 						// if the item destruction requires a die roll...
 						if(roll_to_destroy){
@@ -330,12 +352,13 @@ export class DiceRecharge {
 							
 							// boolean for if it survived.
 							const survivedDestruction = total > threshold;
+							
+							// construct the flavor text.
+							let flavor = game.i18n.format("DICERECHARGE.Item.WasDestroyed", {itemName: item.name});
+							if(survivedDestruction) flavor = game.i18n.format("DICERECHARGE.Item.Survived", {itemName: item.name});
 
 							// send the roll to chat.
-							roll.toMessage({
-								flavor: survivedDestruction ? game.i18n.format("DICERECHARGE.Item.Survived", {itemName: item.name}) : game.i18n.format("DICERECHARGE.Item.WasDestroyed", {itemName: item.name}),
-								speaker: ChatMessage.getSpeaker({actor: item.actor})
-							});
+							await roll.toMessage({flavor, speaker: ChatMessage.getSpeaker({actor: item.actor})});
 							
 							// destroy item in the preferred way if it did not survive:
 							if(!survivedDestruction){
@@ -418,19 +441,35 @@ export class DiceRecharge {
 		const toDestroy = !!item.getFlag(MODULE_NAME, `${DESTROY}.${CHECK}`);
 		
 		// flag the message if it is not already.
-		if(toDestroy && !message.getFlag("dnd5e", "itemData")) await message.setFlag("dnd5e", "itemData", item.toObject());
+		if(toDestroy && !message.getFlag("dnd5e", "itemData")){
+			await message.setFlag("dnd5e", "itemData", item.toObject());
+		}
 	}
 	
-	/* Remember old values when an item has charges changed. */
-	static _rememberOldValue = (item, diff) => {
-		// get the item's old value.
-		let oldValue = item.data?.data?.uses?.value;
+	// flag item for destruction depending on old and new limited uses values.
+	static _flagForDestruction = (item, data, context) => {
+		// don't even bother if Destruction is completely disabled.
+		if(!game.settings.get(CONSTS.MODULE_NAME, CONSTS.SETTING_NAMES.DESTROY_ENABLED)) return;
 		
-		// gets the item's new value.
-		let newValue = diff?.data?.uses?.value;
+		// set initially to false.
+		context[CONSTS.MODULE_NAME] = {destroy: false};
 		
-		// save the old value for later if both old and new are defined (null is important).
-		if(oldValue !== undefined && newValue !== undefined) diff.oldValue = oldValue;
+		/* no further checks needed if... */
+		// the itemType is not valid for destruction.
+		if(!DiceRecharge._applicableItemTypeForDestruction(item)) return;
+		// the item is not set to be destroyed.
+		if(!item.getFlag(CONSTS.MODULE_NAME, `${CONSTS.DESTROY}.${CONSTS.CHECK}`)) return;
+		// the item actually does not show the destruction config.
+		if(!DiceRecharge._validRecoveryMethodForDestruction(item)) return;
+		// the item is not owned by an actor.
+		if(!item.actor) return;
+		
+		// if the item passes the checks, get the item's old and new limited uses value.
+		const oldValue = getProperty(item, "data.data.uses.value");
+		const newValue = getProperty(data, "data.uses.value");
+		
+		// if the item's limited uses value went from something that is NOT null or 0, to something that IS null or 0, set to true.
+		if(![0, null].includes(oldValue) && [0,null].includes(newValue)) context[CONSTS.MODULE_NAME] = {destroy: true};
 	}
 	
 	/* Add "dawn" and "dusk" recharge methods. */
@@ -453,5 +492,5 @@ Hooks.once("ready", DiceRecharge._setUpLimitedUsePeriods);
 Hooks.on("renderItemSheet5e", DiceRecharge._addItemFields);
 Hooks.on("dnd5e.restCompleted", DiceRecharge._promptRechargeOnNewDay);
 Hooks.on("updateItem", DiceRecharge._destroyItems);
-Hooks.on("preUpdateItem", DiceRecharge._rememberOldValue);
+Hooks.on("preUpdateItem", DiceRecharge._flagForDestruction);
 Hooks.on("createChatMessage", DiceRecharge._flagMessages);

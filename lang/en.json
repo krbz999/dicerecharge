@@ -32,5 +32,7 @@
 	"DICERECHARGE.Settings.DestroyItemTypeFeat.Name": "Destroy Features.",
 	"DICERECHARGE.Settings.DestroyItemTypeFeat.Hint": "If checked, the item destruction feature is enabled for Feature-type items.",
 	"DICERECHARGE.Settings.DestroyItemTypeSpell.Name": "Destroy Spells.",
-	"DICERECHARGE.Settings.DestroyItemTypeSpell.Hint": "If checked, the item destruction feature is enabled for Spell-type items."
+	"DICERECHARGE.Settings.DestroyItemTypeSpell.Hint": "If checked, the item destruction feature is enabled for Spell-type items.",
+	"DICERECHARGE.RechargeMessage.Singular": "{name} recharges",
+	"DICERECHARGE.RechargeMessage.Pluralis": "{name}'s magic items recharge:"
 }

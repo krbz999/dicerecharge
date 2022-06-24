@@ -3,7 +3,7 @@
 Adds a field when the recharge method is set to `dawn` or `dusk` where users can input a dice formula.
 - This formula is used to recharge the item on a rest if `New Day` is selected.
 - The formula fields supports all scaling values.
-- Recharging can be triggered manually using `game.dicerecharge.rechargeItems(actor)`.
+- Several helper functions for those interested are located in `game.dicerecharge`.
 
 Adds a customisable way to prompt magic items to be destroyed when they reach zero charges (available if recharge method is set to anything but blank).
 - You can choose what type of die is rolled (d2, d3, d4, d6, d8, d10, d12, d20, d100), and what the threshold is.
