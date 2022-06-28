@@ -3,7 +3,7 @@
     "title": "Z's Formulaic Recharging",
     "description": "Adds functionality for recharging items or features using dice formula, and destroying items that reach zero uses.",
     "system": ["dnd5e"],
-    "version": "v2.0.7",
+    "version": "v2.0.8",
     "authors": [{
 		"name": "Zhell",
 		"url": "https://github.com/krbz999",

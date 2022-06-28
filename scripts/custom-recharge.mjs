@@ -36,7 +36,7 @@ export class DiceRecharge {
 		
 		// bail out if no change in values.
 		if(value === newValue){
-			if(notif) return ui.notifications.warn(`${item.name} had no change in limited uses.`);
+			if(notif) return ui.notifications.warn(game.i18n.format("DICERECHARGE.RechargeMessage.AlreadyAtMax", {name: item.name}));
 			else return;
 		}
 		
@@ -155,6 +155,10 @@ export class DiceRecharge {
 		// item must be an owned item.
 		if(!item.actor) return false;
 		
+		// must also be non-empty action type.
+		const activationType = getProperty(item, "data.data.activation.type");
+		if(!activationType) return false;
+		
 		// the item must have limited uses.
 		if(!item.hasLimitedUses) return false;
 		
@@ -180,6 +184,9 @@ export class DiceRecharge {
 	
 	/* Figure out if the item's type is allowed to be destroyed. */
 	static _applicableItemTypeForDestruction = (item) => {
+		// dont even bother if Destruction is completely disabled.
+		if(!game.settings.get(MODULE_NAME, DESTROY_ENABLED)) return false;
+		
 		const {MODULE_NAME, APPLICABLE_ITEM_TYPES: {ALWAYS, OPTIONAL}} = CONSTS;
 		
 		// the item's type.
@@ -204,6 +211,10 @@ export class DiceRecharge {
 		const per = getProperty(item, "data.data.uses.per");
 		const {limitedUsePeriods} = CONFIG.DND5E;
 		
+		// must also be non-empty action type.
+		const activationType = getProperty(item, "data.data.activation.type");
+		if(!activationType) return false;
+		
 		return !!limitedUsePeriods[per];
 	}
 	
@@ -223,6 +234,10 @@ export class DiceRecharge {
 	static _addChargeRecoveryField = (itemSheet, html) => {
 		
 		const {MODULE_NAME, FORMULA} = CONSTS;
+		
+		// bail out if item has no activation type.
+		const activationType = getProperty(itemSheet.item, "data.data.activation.type");
+		if(!activationType) return;
 		
 		// dont even bother if the recovery method is not one of those allowed.
 		if(!DiceRecharge._moduleTimePeriods().includes(itemSheet.item?.getChatData().uses?.per)) return;
@@ -248,11 +263,10 @@ export class DiceRecharge {
 	
 	/* Add the destruction fields to item sheet. */
 	static _addDestructionField = (itemSheet, html) => {
-		
-		const {MODULE_NAME, SETTING_NAMES: {DESTROY_ENABLED}, DESTROY, CHECK, DIE, DEFAULT_DIE, THRESHOLD, DIE_TYPES, ALWAYS} = CONSTS;
-		
 		// dont even bother if Destruction is completely disabled.
 		if(!game.settings.get(MODULE_NAME, DESTROY_ENABLED)) return;
+		
+		const {MODULE_NAME, SETTING_NAMES: {DESTROY_ENABLED}, DESTROY, CHECK, DIE, DEFAULT_DIE, THRESHOLD, DIE_TYPES, ALWAYS} = CONSTS;
 		
 		// dont even bother if the item's type is not allowed.
 		if(!DiceRecharge._applicableItemTypeForDestruction(itemSheet.item)) return;
@@ -303,6 +317,9 @@ export class DiceRecharge {
 	
 	// get destruction prompt message.
 	static _getDestroyPromptMessage = (die, threshold, always) => {
+		// don't even bother if Destruction is completely disabled.
+		if(!game.settings.get(CONSTS.MODULE_NAME, CONSTS.SETTING_NAMES.DESTROY_ENABLED)) return;
+		
 		if(always) return game.i18n.localize("DICERECHARGE.RollToSurvive.Always");
 		if(threshold > 1) return game.i18n.format("DICERECHARGE.RollToSurvive.ThresholdAboveOne", {die, threshold});
 		return game.i18n.format("DICERECHARGE.RollToSurvive.ThresholdOne", {die});
@@ -310,11 +327,14 @@ export class DiceRecharge {
 	
 	// prompt destruction of an item.
 	static _destroyItems = (item, data, context, userId) => {
-		const {MODULE_NAME, DESTROY, DIE, DEFAULT_DIE, THRESHOLD, ALWAYS,
-			SETTING_NAMES: {DESTROY_ENABLED, DESTROY_MANUAL}} = CONSTS;
+		// don't even bother if Destruction is completely disabled.
+		if(!game.settings.get(CONSTS.MODULE_NAME, CONSTS.SETTING_NAMES.DESTROY_ENABLED)) return;
+		
+		const {MODULE_NAME, DESTROY, DIE, DEFAULT_DIE, THRESHOLD, ALWAYS, SETTING_NAMES} = CONSTS;
 		
 		// bail out if preUpdate hook has not flagged this for destruction.
-		if(!context[MODULE_NAME].destroy) return;
+		const flagged_for_destruction = getProperty(context, `${MODULE_NAME}.destroy`);
+		if(!flagged_for_destruction) return;
 		
 		// dont run this for anyone but the one updating the item.
 		if(userId !== game.user.id) return;
@@ -341,7 +361,7 @@ export class DiceRecharge {
 					callback: async () => {
 						
 						// get the setting value (boolean).
-						const manualDestruction = !!game.settings.get(MODULE_NAME, DESTROY_MANUAL);
+						const manualDestruction = !!game.settings.get(MODULE_NAME, SETTING_NAMES.DESTROY_MANUAL);
 						
 						// if the item destruction requires a die roll...
 						if(roll_to_destroy){
@@ -385,10 +405,11 @@ export class DiceRecharge {
 	
 	// item delete prompt, either dialog (true) or automatic (false).
 	static _deleteItemPrompt = async (item, manual) => {
-		const {MODULE_NAME} = CONSTS;
+		// don't even bother if Destruction is completely disabled.
+		if(!game.settings.get(CONSTS.MODULE_NAME, CONSTS.SETTING_NAMES.DESTROY_ENABLED)) return;
 		
 		// if automatic, simply delete.
-		if(!manual) return item.delete({[MODULE_NAME]: true});
+		if(!manual) return item.delete({[CONSTS.MODULE_NAME]: true});
 		
 		// if prompted, pop a dialog.
 		const deletion = await new Promise(resolve => {
@@ -413,12 +434,15 @@ export class DiceRecharge {
 				close: () => {resolve(false)}
 			}).render(true);
 		});
-		if(deletion) return item.delete({[MODULE_NAME]: true});
+		if(deletion) return item.delete({[CONSTS.MODULE_NAME]: true});
 		return false;
 	}
 	
 	/* Flag a message with item data if the item is set to be destroyed. */
 	static _flagMessages = async (message) => {
+		// don't even bother if Destruction is completely disabled.
+		if(!game.settings.get(CONSTS.MODULE_NAME, CONSTS.SETTING_NAMES.DESTROY_ENABLED)) return;
+		
 		const {MODULE_NAME, DESTROY, CHECK} = CONSTS;
 		const {user, content} = message.data;
 		if(game.user.id !== user) return;
@@ -475,13 +499,12 @@ export class DiceRecharge {
 	/* Add "dawn" and "dusk" recharge methods. */
 	static _setUpLimitedUsePeriods = () => {
 		const periods = duplicate(CONFIG.DND5E.limitedUsePeriods);
-		const {TIME_PERIODS} = CONSTS;
 		
 		// localize
-		TIME_PERIODS["dawn"] = game.i18n.localize("DICERECHARGE.Time.Dawn");
-		TIME_PERIODS["dusk"] = game.i18n.localize("DICERECHARGE.Time.Dusk");
+		CONSTS.TIME_PERIODS["dawn"] = game.i18n.localize("DICERECHARGE.Time.Dawn");
+		CONSTS.TIME_PERIODS["dusk"] = game.i18n.localize("DICERECHARGE.Time.Dusk");
 		
-		CONFIG.DND5E.limitedUsePeriods = mergeObject(periods, TIME_PERIODS);
+		CONFIG.DND5E.limitedUsePeriods = mergeObject(periods, CONSTS.TIME_PERIODS);
 		
 		// set up CONSTS.DIE_TYPES.infty while we're at it.
 		CONSTS.DIE_TYPES.infty = game.i18n.localize("DICERECHARGE.ItemSheet.Always");
