@@ -1,6 +1,6 @@
 export const CONSTS = {
 	MODULE_NAME: "dicerecharge",
-	MODULE_TITLE: "Z's Formulaic Recharging",
+	MODULE_TITLE: "Dice Recharge",
 	MODULE_TITLE_SHORT: "ZHELL",
 	FORMULA: "recovery-formula",
 	DESTROY: "destroy",

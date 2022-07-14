@@ -1,13 +1,17 @@
-### Z's Formulaic Recharging
+## Dice Recharge
 
-Adds a field when the recharge method is set to `dawn` or `dusk` where users can input a dice formula.
+This module is for recovering the limited uses of items using a dice formula automatically.
+
+### Recovery
+A field is added on items when the recharge method is set to `Dawn` or `Dusk` where users can input a dice formula.
 - This formula is used to recharge the item on a rest if `New Day` is selected.
 - The formula fields supports all scaling values.
 - Several helper functions for those interested are located in `game.dicerecharge`.
+- Settings exist for whether users want a smaller table output on a rest, or individual rolls for each item.
+- Negative roll formulas are also supported.
 
-Adds a customisable way to prompt magic items to be destroyed when they reach zero charges (available if recharge method is set to anything but blank).
-- You can choose what type of die is rolled (d2, d3, d4, d6, d8, d10, d12, d20, d100), and what the threshold is.
-- Instead of a roll, you can set an item to always be destroyed when it reaches zero charges.
-
-Settings exist for the chat output method (table or individual rolls), as well as for customising the way magic items are destroyed on zero charges; automatic, prompted, or not at all.
+### Destruction
+Magic items can be prompted to be destroyed when they reach zero charges, available if the recharge method is set to anything but blank.
+- You can choose what type of die is rolled, and what the threshold is, or simply to always be destroyed.
+- Settings exist to completely disable this feature, or set the destruction to manual (users will be prompted to delete a destroyed item) or automatic.
 - Destruction of items work for weapons and equipment, and options exist for enabling this for spells, features, or consumable items as well.

@@ -6,7 +6,7 @@ export class DiceRecharge {
 	static nullifyCharges = async (actor) => {
 		const updates = actor.items.filter(i => i.hasLimitedUses).map(i => ({
 			_id: i.id,
-			"data.uses.value": 0
+			"system.uses.value": 0
 		}));
 		await actor.updateEmbeddedDocuments("Item", updates);
 	}
@@ -15,7 +15,7 @@ export class DiceRecharge {
 	static maximizeCharges = async (actor) => {
 		const updates = actor.items.filter(i => i.hasLimitedUses).map(i => ({
 			_id: i.id,
-			"data.uses.value": i.getChatData().uses.max
+			"system.uses.value": i.system.uses.max
 		}));
 		await actor.updateEmbeddedDocuments("Item", updates);
 	}
@@ -41,7 +41,7 @@ export class DiceRecharge {
 		}
 		
 		// update the item.
-		await item.update({"data.uses.value": newValue});
+		await item.update({"system.uses.value": newValue});
 		
 		// display roll message.
 		return DiceRecharge._rechargeRollToMessage(roll, item.name, item.actor);
@@ -87,7 +87,7 @@ export class DiceRecharge {
 			diceRolls.push([roll, item.name]);
 			
 			// push to the updates.
-			updates.push({_id: item.id, "data.uses.value": newValue});
+			updates.push({_id: item.id, "system.uses.value": newValue});
 		}
 		
 		// bail out if there were no updates.
@@ -131,7 +131,7 @@ export class DiceRecharge {
 	// recharge a singular item. Return an evaluated roll, and old and new values.
 	static _getRechargeValues = async (item) => {
 		// get the item's uses values.
-		const {value, max} = getProperty(item, "data.data.uses");
+		const {value, max} = item.system.uses;
 		
 		// get the item's recovery formula.
 		const formulaFlag = item.getFlag(CONSTS.MODULE_NAME, CONSTS.FORMULA);
@@ -153,7 +153,7 @@ export class DiceRecharge {
 		if(!item.actor) return false;
 		
 		// must also be non-empty action type.
-		const activationType = getProperty(item, "data.data.activation.type");
+		const activationType = foundry.utils.getProperty(item, "system.activation.type");
 		if(!activationType) return false;
 		
 		// the item must have limited uses.
@@ -167,7 +167,7 @@ export class DiceRecharge {
 		const time_of_day = DiceRecharge._moduleTimePeriods().includes(time) ? [time] : DiceRecharge._moduleTimePeriods();
 		
 		// the item must have a valid recovery method currently set.
-		const recovery_method = getProperty(item, "data.data.uses.per");
+		const recovery_method = foundry.utils.getProperty(item, "system.uses.per");
 		if(!time_of_day.includes(recovery_method)) return false;
 		
 		return true;
@@ -203,11 +203,11 @@ export class DiceRecharge {
 	
 	/* Return whether the item's recovery method is valid for Destruction feature. */
 	static _validRecoveryMethodForDestruction = (item) => {
-		const per = getProperty(item, "data.data.uses.per");
+		const per = foundry.utils.getProperty(item, "system.uses.per");
 		const {limitedUsePeriods} = CONFIG.DND5E;
 		
 		// must also be non-empty action type.
-		const activationType = getProperty(item, "data.data.activation.type");
+		const activationType = foundry.utils.getProperty(item, "system.activation.type");
 		if(!activationType) return false;
 		
 		return !!limitedUsePeriods[per];
@@ -229,11 +229,12 @@ export class DiceRecharge {
 	static _addChargeRecoveryField = (itemSheet, html) => {
 		
 		// bail out if item has no activation type.
-		const activationType = getProperty(itemSheet.item, "data.data.activation.type");
+		const activationType = foundry.utils.getProperty(itemSheet.item, "system.activation.type");
 		if(!activationType) return;
 		
 		// dont even bother if the recovery method is not one of those allowed.
-		if(!DiceRecharge._moduleTimePeriods().includes(itemSheet.item?.getChatData().uses?.per)) return;
+		const recovery_method = foundry.utils.getProperty(itemSheet.item, "system.uses.per");
+		if(!DiceRecharge._moduleTimePeriods().includes(recovery_method)) return;
 		
 		// get the current recovery formula, if any.
 		const recoveryFormula = itemSheet.item.getFlag(CONSTS.MODULE_NAME, CONSTS.FORMULA) ?? "";
@@ -242,7 +243,7 @@ export class DiceRecharge {
 		const div = document.createElement("div");
 		div.setAttribute("class", "form-group dicerecharge");
 		div.innerHTML = `
-			<label for="dicerecharge-recovery-formula">${game.i18n.localize("DICERECHARGE.ItemSheet.RecoveryFormula")}</label>
+			<label>${game.i18n.localize("DICERECHARGE.ItemSheet.RecoveryFormula")}</label>
 			<div class="form-fields">
 				<input id="dicerecharge-recovery-formula" type="text" name="flags.${CONSTS.MODULE_NAME}.${CONSTS.FORMULA}" value="${recoveryFormula}" />
 			</div>`;
@@ -274,7 +275,7 @@ export class DiceRecharge {
 		const div = document.createElement("div");
 		div.setAttribute("class", "form-group destruction");
 		div.innerHTML = `
-			<label for="destructioncheckbox">${game.i18n.localize("DICERECHARGE.ItemSheet.ItemDestruction")}</label>
+			<label>${game.i18n.localize("DICERECHARGE.ItemSheet.ItemDestruction")}</label>
 			<div class="form-fields">
 				<input
 					id="destructioncheckbox"
@@ -322,7 +323,7 @@ export class DiceRecharge {
 		if(!game.settings.get(CONSTS.MODULE_NAME, CONSTS.SETTING_NAMES.DESTROY_ENABLED)) return;
 		
 		// bail out if preUpdate hook has not flagged this for destruction.
-		const flagged_for_destruction = getProperty(context, `${CONSTS.MODULE_NAME}.destroy`);
+		const flagged_for_destruction = foundry.utils.getProperty(context, `${CONSTS.MODULE_NAME}.destroy`);
 		if(!flagged_for_destruction) return;
 		
 		// dont run this for anyone but the one updating the item.
@@ -340,7 +341,7 @@ export class DiceRecharge {
 		new Dialog({
 			title: item.name,
 			content: `
-				<p style="text-align:center;"><img src="${item.data.img}" style="width: 35%; border: none" /></p><hr>
+				<p style="text-align:center;"><img src="${item.img}" style="width: 35%; border: none" /></p><hr>
 				<p>${game.i18n.format("DICERECHARGE.Item.HasReachedZeroCharges", {itemName: item.name})}</p>
 				<p>${dialogMessage}</p><hr>`,
 			buttons: {
@@ -428,12 +429,12 @@ export class DiceRecharge {
 	}
 	
 	/* Flag a message with item data if the item is set to be destroyed. */
-	static _flagMessages = async (message) => {
+	static _flagMessages = async (message, context, userId) => {
 		// don't even bother if Destruction is completely disabled.
 		if(!game.settings.get(CONSTS.MODULE_NAME, CONSTS.SETTING_NAMES.DESTROY_ENABLED)) return;
 		
-		const {user, content} = message.data;
-		if(game.user.id !== user) return;
+		const {content} = message;
+		if(game.user.id !== userId) return;
 		
 		// actor and their item.
 		const actorIndex = content.indexOf("data-actor-id");
@@ -477,8 +478,8 @@ export class DiceRecharge {
 		if(!item.actor) return;
 		
 		// if the item passes the checks, get the item's old and new limited uses value.
-		const oldValue = getProperty(item, "data.data.uses.value");
-		const newValue = getProperty(data, "data.uses.value");
+		const oldValue = foundry.utils.getProperty(item, "system.uses.value");
+		const newValue = foundry.utils.getProperty(data, "system.uses.value");
 		
 		// if the item's limited uses value went from something that is NOT null or 0, to something that IS null or 0, set to true.
 		if(![0, null].includes(oldValue) && [0,null].includes(newValue)) context[CONSTS.MODULE_NAME] = {destroy: true};
