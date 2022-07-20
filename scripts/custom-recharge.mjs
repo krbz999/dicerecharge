@@ -44,7 +44,7 @@ export class DiceRecharge {
 		await item.update({"system.uses.value": newValue});
 		
 		// display roll message.
-		return DiceRecharge._rechargeRollToMessage(roll, item.name, item.actor);
+		return DiceRecharge._rechargeRollToMessage(roll, item.name, item.actor, total);
 	}
 	
 	/* Request a recharge of all items */
@@ -112,7 +112,7 @@ export class DiceRecharge {
 			});
 		}else{
 			for(let [showRoll, name] of diceRolls){
-				await DiceRecharge._rechargeRollToMessage(showRoll, name, actor);
+				await DiceRecharge._rechargeRollToMessage(showRoll, name, actor, total);
 			}
 		}
 		
@@ -120,10 +120,13 @@ export class DiceRecharge {
 	}
 	
 	// display roll message for singular item.
-	static _rechargeRollToMessage = async (roll, name, actor) => {
+	static _rechargeRollToMessage = async (roll, name, actor, total) => {
+		// flavor depends on charges gained/lost.
+		const localString = total > 0 ? "DICERECHARGE.RechargeMessage.Singular" : "DICERECHARGE.RechargeMessage.SingularD";
+		// post message.
 		return roll.toMessage({
 			user: game.user.id,
-			flavor: game.i18n.format("DICERECHARGE.RechargeMessage.Singular", {name}),
+			flavor: game.i18n.format(localString, {name}),
 			speaker: ChatMessage.getSpeaker({actor})
 		});
 	}
@@ -137,7 +140,7 @@ export class DiceRecharge {
 		const formulaFlag = item.getFlag(CONSTS.MODULE_NAME, CONSTS.FORMULA);
 		
 		// replace formula data with actor roll data.
-		const formula = Roll.replaceFormulaData(formulaFlag, item.actor.getRollData());
+		const formula = Roll.replaceFormulaData(formulaFlag, item.getRollData());
 		
 		// create the roll, evaluate it, and store the total.
 		const roll = new Roll(formula);
