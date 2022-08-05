@@ -1,5 +1,6 @@
 {
 	"id": "dicerecharge",
+	"name": "dicerecharge",
 	"title": "Dice Recharge",
 	"version": "v3.0.0",
 	"authors": [{
@@ -11,6 +12,7 @@
 	"compatibility": {
 		"minimum": "10"
 	},
+	"minimumCoreVersion": "10",
 	"relationships": {
 		"systems": [{
 			"id": "dnd5e",
@@ -18,10 +20,7 @@
 			"manifest": "https://raw.githubusercontent.com/foundryvtt/dnd5e/master/system.json"
 		}]
 	},
-	"esmodules": [
-		"./setup.js",
-		"./scripts/custom-recharge.mjs"
-	],
+	"esmodules": ["./setup.js"],
 	"languages": [{
 		"lang": "en",
 		"name": "English",

@@ -1,9 +1,31 @@
-import { CONSTS } from "./scripts/const.mjs";
+import { CONSTANTS, MODULE } from "./scripts/const.mjs";
 import { registerSettings } from "./scripts/settings.mjs";
-import { api } from "./scripts/api.mjs";
+import { DR_CHARGING, DR_DESTRUCTION, DR_FUNCTIONS, DR_MAIN } from "./scripts/main.mjs";
 
 Hooks.once("init", () => {
-    console.log(`${CONSTS.MODULE_TITLE_SHORT} | Initializing ${CONSTS.MODULE_TITLE}`);
+    console.log(`ZHELL | Initializing Dice Recharge`);
     registerSettings();
-	api.register();
+	
+    game.dicerecharge = {
+        rechargeItem: DR_FUNCTIONS.rechargeItem,
+        rechargeItems: DR_FUNCTIONS.rechargeItems,
+        dechargeItems: DR_FUNCTIONS.nullifyCharges,
+        maximizeItems: DR_FUNCTIONS.maximizeCharges
+    }
+});
+
+Hooks.once("ready", () => {
+
+    const destr_on = !!game.settings.get(MODULE, CONSTANTS.SETTING_NAMES.DESTROY_ENABLED);
+
+    DR_MAIN._setUpLimitedUsePeriods();
+    Hooks.on("renderItemSheet5e", DR_CHARGING._addChargeRecoveryField);
+    Hooks.on("dnd5e.restCompleted", DR_CHARGING._promptRechargeOnNewDay);
+
+    if(destr_on){
+        Hooks.on("updateItem", DR_DESTRUCTION._destroyItems);
+        Hooks.on("preUpdateItem", DR_DESTRUCTION._flagForDestruction);
+        Hooks.on("createChatMessage", DR_DESTRUCTION._flagMessages);
+        Hooks.on("renderItemSheet5e", DR_DESTRUCTION._addDestructionField);
+    }
 });

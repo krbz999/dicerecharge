@@ -1,12 +1,5 @@
-export const CONSTS = {
-	MODULE_NAME: "dicerecharge",
-	MODULE_TITLE: "Dice Recharge",
-	MODULE_TITLE_SHORT: "ZHELL",
-	FORMULA: "recovery-formula",
-	DESTROY: "destroy",
-	CHECK: "check",
-	DIE: "die",
-	THRESHOLD: "threshold",
+export const MODULE = "dicerecharge";
+export const CONSTANTS = {
 	APPLICABLE_ITEM_TYPES: {
 		ALWAYS: ["weapon", "equipment"],
 		OPTIONAL: ["consumable", "spell", "feat"]
@@ -27,8 +20,6 @@ export const CONSTS = {
 		"d100": "d100",
 		"infty": "Always"
 	},
-	ALWAYS: "infty",
-	DEFAULT_DIE: "d20",
 	SETTING_NAMES: {
 		DICE_ROLL: "diceRoll",
 		DESTROY_MANUAL: "manuallyDestroy",
