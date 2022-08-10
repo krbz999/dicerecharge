@@ -9,10 +9,9 @@
 		"discord": "Zhell#9201",
 		"ko-fi": "https://ko-fi.com/zhell"
 	}],
-	"compatibility": {
-		"minimum": "10"
-	},
 	"minimumCoreVersion": "10",
+	"compatibility": {"minimum": "10"},
+	"esmodules": ["./setup.js"],
 	"relationships": {
 		"systems": [{
 			"id": "dnd5e",
@@ -20,7 +19,6 @@
 			"manifest": "https://raw.githubusercontent.com/foundryvtt/dnd5e/master/system.json"
 		}]
 	},
-	"esmodules": ["./setup.js"],
 	"languages": [{
 		"lang": "en",
 		"name": "English",

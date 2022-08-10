@@ -5,15 +5,6 @@ export function registerSettings() {
 }
 
 function _registerSettings(){
-	game.settings.register(MODULE, CONSTANTS.SETTING_NAMES.DICE_ROLL, {
-		name: game.i18n.localize("DICERECHARGE.Settings.DiceRoll.Name"),
-		hint: game.i18n.localize("DICERECHARGE.Settings.DiceRoll.Hint"),
-		scope: "world",
-		config: true,
-		type: Boolean,
-		default: false
-	});
-	
 	game.settings.register(MODULE, CONSTANTS.SETTING_NAMES.DESTROY_ENABLED, {
 		name: game.i18n.localize("DICERECHARGE.Settings.DestroyEnabled.Name"),
 		hint: game.i18n.localize("DICERECHARGE.Settings.DestroyEnabled.Hint"),

@@ -21,7 +21,6 @@ export const CONSTANTS = {
 		"infty": "Always"
 	},
 	SETTING_NAMES: {
-		DICE_ROLL: "diceRoll",
 		DESTROY_MANUAL: "manuallyDestroy",
 		DESTROY_ENABLED: "neverDestroy"
 	}

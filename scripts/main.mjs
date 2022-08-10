@@ -25,17 +25,42 @@ export class DR_MAIN {
 export class DR_CHARGING {
 
 	// display roll message for singular item.
-	static _rechargeRollToMessage = async (roll, name, actor, total) => {
+	static _rechargeRollToMessage = async (roll, actor) => {
 		// flavor depends on charges gained/lost.
 		const recharge = "DICERECHARGE.RechargeMessage.Singular";
 		const decharge = "DICERECHARGE.RechargeMessage.SingularD";
 
-		const localString = total > 0 ? recharge : decharge;
+		const [diceRoll, name] = roll;
+		const localString = diceRoll.total > 0 ? recharge : decharge;
+		
 		// post message.
-		return roll.toMessage({
+		return diceRoll.toMessage({
 			user: game.user.id,
 			flavor: game.i18n.format(localString, {name}),
 			speaker: ChatMessage.getSpeaker({actor})
+		}, {
+			rollMode: game.settings.get("core", "rollMode")
+		});
+	}
+
+	// display roll message for multiple items.
+	static _rechargeRollsToMessage = async (diceRolls, actor) => {
+		// flavor depends on charges gained/lost.
+		const recharge = "DICERECHARGE.RechargeMessage.Singular";
+		const decharge = "DICERECHARGE.RechargeMessage.SingularD";
+		
+		const renders = await Promise.all(diceRolls.map(([r,n], i) => {
+			const localString = r.total > 0 ? recharge : decharge;
+			return r.render({
+				flavor: game.i18n.format(localString, {name: n})
+			});
+		}));
+		await ChatMessage.create({
+			user: game.user.id,
+			flavor: game.i18n.format("DICERECHARGE.RechargeMessage.Pluralis", {name: actor.name}),
+			speaker: ChatMessage.getSpeaker({actor}),
+			type: CONST.CHAT_MESSAGE_TYPES.ROLL,
+			content: renders.join("")
 		}, {
 			rollMode: game.settings.get("core", "rollMode")
 		});
@@ -431,14 +456,11 @@ export class DR_FUNCTIONS {
 		await item.update({"system.uses.value": newValue});
 		
 		// display roll message.
-		return DR_CHARGING._rechargeRollToMessage(roll, item.name, item.actor, total);
+		return DR_CHARGING._rechargeRollToMessage([roll, item.name], item.actor);
 	}
 	
 	/* Request a recharge of all items */
 	static rechargeItems = async (actor, time) => {
-		// get visual setting:
-		const roll_dice = game.settings.get(MODULE, CONSTANTS.SETTING_NAMES.DICE_ROLL);
-		
 		// get items that can recharge:
 		const rechargingItems = actor.items.filter(item => {
 			return DR_CHARGING._validForRecharging(item, time);
@@ -450,7 +472,6 @@ export class DR_FUNCTIONS {
 		// create updates and rolls arrays:
 		const updates = [];
 		const diceRolls = [];
-		let table_body = "";
 		for(let item of rechargingItems){
 			// get a recharge roll, old value, max value, and roll total.
 			const [roll, value, max, total] = await DR_CHARGING._getRechargeValues(item);
@@ -461,14 +482,6 @@ export class DR_FUNCTIONS {
 			// skip this item if no change in values.
 			if(newValue === value) continue;
 			
-			// add to table.
-			table_body += `
-				<tr>
-					<td>${item.name}</td>
-					<td style="text-align: center">${value}</td>
-					<td style="text-align: center">${newValue}</td>
-				</tr>`;
-			
 			// push the roll and the item name to array for later.
 			diceRolls.push([roll, item.name]);
 			
@@ -478,37 +491,8 @@ export class DR_FUNCTIONS {
 		
 		// bail out if there were no updates.
 		if(updates.length < 1) return [];
-		
-		// Show the table of recharges or show each item roll individually.
-		if(!roll_dice && updates.length > 1){
-			for(let [showRoll, name] of diceRolls){
-				game.dice3d?.showForRoll(showRoll, game.user, true);
-			}
-
-			const tMag = game.i18n.localize("DICERECHARGE.Table.MagicItem");
-			const tOld = game.i18n.localize("DICERECHARGE.Table.Old");
-			const tNew = game.i18n.localize("DICERECHARGE.Table.New");
-
-			await ChatMessage.create({
-				user: game.user.id,
-				speaker: ChatMessage.getSpeaker({actor}),
-				flavor: game.i18n.format("DICERECHARGE.RechargeMessage.Pluralis", {name: actor.name}),
-				content: `
-				<table style="width: 100%; border: none">
-					<thead><tr>
-						<th style="width: 60%; text-align: center">${tMag}</th>
-						<th style="width: 20%; text-align: center">${tOld}</th>
-						<th style="width: 20%; text-align: center">${tNew}</th>
-					</tr></thead>
-					<tbody>${table_body}</tbody>
-				</table>`
-			});
-		}else{
-			for(let [showRoll, name] of diceRolls){
-				await DR_CHARGING._rechargeRollToMessage(showRoll, name, actor, showRoll.total);
-			}
-		}
-		
+		else if(updates.length === 1) await DR_CHARGING._rechargeRollToMessage(diceRolls[0], actor);
+		else await DR_CHARGING._rechargeRollsToMessage(diceRolls, actor);
 		return actor.updateEmbeddedDocuments("Item", updates);
 	}
 }
