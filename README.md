@@ -15,3 +15,10 @@ Magic items can be prompted to be destroyed when they reach zero charges, availa
 - You can choose what type of die is rolled, and what the threshold is, or simply to always be destroyed.
 - Settings exist to completely disable this feature, or set the destruction to manual (users will be prompted to delete a destroyed item) or automatic.
 - Destruction of items work for weapons and equipment, and options exist for enabling this for spells, features, or consumable items as well.
+
+### Helper Functions
+These functions are found in `game.dicerecharge`.
+* `.rechargeItem` (takes an item) recharges an item using its recharge formula.
+* `.rechargeItems` (takes an actor) recharges all the actor's items using their recharge formulas.
+* `.dechargeItems` (takes an actor) removes all limited uses from all items on the actor.
+* `.maximizeItems` (takes an actor) sets all limited uses on all items on the actor to their maximum.
