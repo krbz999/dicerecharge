@@ -12,6 +12,7 @@
 	"minimumCoreVersion": "10",
 	"compatibility": {"minimum": "10"},
 	"esmodules": ["./setup.js"],
+	"styles": ["./styles/styles.css"],
 	"relationships": {
 		"systems": [{
 			"id": "dnd5e",

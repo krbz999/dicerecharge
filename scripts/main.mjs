@@ -119,34 +119,35 @@ export class DR_CHARGING {
 	}
 
 	/* Add the charge recovery fields to item sheet. */
-	static _addChargeRecoveryField = (itemSheet, html) => {
-			
-		// bail out if item has no activation type.
-		const activationType = foundry.utils.getProperty(itemSheet.item, "system.activation.type");
-		if(!activationType) return;
-		
-		// dont even bother if the recovery method is not one of those allowed.
-		const recovery_method = foundry.utils.getProperty(itemSheet.item, "system.uses.per");
-		if(!DR_MAIN._moduleTimePeriods.includes(recovery_method)) return;
-		
-		// get the current recovery formula, if any.
-		const recoveryFormula = itemSheet.item.getFlag(MODULE, "recovery-formula") ?? "";
-		
-		// create the new html element in the item's sheet.
-		const div = document.createElement("div");
-		div.classList.add("form-group", "dicerecharge");
-		div.innerHTML = `
-			<label>${game.i18n.localize("DICERECHARGE.ItemSheet.RecoveryFormula")}</label>
-			<div class="form-fields">
-				<input id="dicerecharge-recovery-formula" type="text" name="flags.${MODULE}.${"recovery-formula"}" value="${recoveryFormula}" />
-			</div>`;
-			
+	static _addChargeRecoveryField = (sheet, html) => {
+
 		// find the form-fields under which to place the new element.
 		const per = html[0].querySelector(".form-group.uses-per");
-		
-		// insert the new element.
-		per.parentNode.insertBefore(div, per.nextSibling);
-		itemSheet.setPosition();
+
+		if(per){
+			const item = sheet.object;
+
+			// dont even bother if the recovery method is not one of those allowed.
+			const recovery_method = foundry.utils.getProperty(item, "system.uses.per");
+			if(!DR_MAIN._moduleTimePeriods.includes(recovery_method)) return;
+			
+			// get the current recovery formula, if any.
+			const recoveryFormula = sheet.item.getFlag(MODULE, "recovery-formula") ?? "";
+			
+			// create the new html element in the item's sheet.
+			const div = document.createElement("DIV");
+			div.classList.add("form-group", "dicerecharge");
+			const label = game.i18n.localize("DICERECHARGE.ItemSheet.RecoveryFormula");
+			const name = `flags.${MODULE}.recovery-formula`;
+			div.innerHTML = `
+				<label>${label}</label>
+				<div class="form-fields">
+					<input type="text" name="${name}" value="${recoveryFormula}">
+				</div>`;
+			// insert.
+			per.after(div);
+			sheet.setPosition();
+		}
 	}
 
 }
@@ -201,27 +202,26 @@ export class DR_DESTRUCTION {
 		div.setAttribute("class", "form-group destruction");
 
 		// template vars.
-		const label = game.i18n.localize("DICERECHARGE.ItemSheet.ItemDestruction");
-		const nameCheck = `flags.${MODULE}.destroy.check`;
-		const checked = check ? "checked" : "";
-		const sep = game.i18n.localize("DICERECHARGE.ItemSheet.DestroyedIf");
-		const nameDie = `flags.${MODULE}.destroy.die`;
-		const disabled = !check ? "disabled" : "";
 		const options = Object.entries(CONSTANTS.DIE_TYPES).reduce((acc, [key, value]) => {
 			const selected = die === key ? "selected" : "";
 			return acc + `<option value="${key}" ${selected}>${value}</option>`;
 		}, ``);
+
+		// the elements of the row:
+		const label = game.i18n.localize("DICERECHARGE.ItemSheet.ItemDestruction");
+		const nameCheck = `flags.${MODULE}.destroy.check`;
+		const sep = game.i18n.localize("DICERECHARGE.ItemSheet.DestroyedIf");
+		const nameDie = `flags.${MODULE}.destroy.die`;
 		const nameThres = `flags.${MODULE}.destroy.threshold`;
 		const value = (die === "infty" || !check) ? "" : threshold ? threshold : 1;
 		const disabledInp = (die === "infty" || !check) ? "disabled" : "";
-		
 		div.innerHTML = `
 			<label>${label}</label>
 			<div class="form-fields">
-				<input id="destructioncheckbox" type="checkbox" name="${nameCheck}" ${checked}>
-				<span class="sep">${sep}</span>
-				<select name="${nameDie}" ${disabled}>${options}</select>
-				<span class="sep">&le;&nbsp;</span>
+				<input type="checkbox" name="${nameCheck}" ${check ? "checked" : ""}>
+				<span class="sep dicerecharge">${sep}</span>
+				<select name="${nameDie}" ${!check ? "disabled" : ""}>${options}</select>
+				<span class="sep dicerecharge">&le;</span>
 				<input
 					type="number" name="${nameThres}" data-dtype="number"
 					value="${value}" min="1" oninput="validity.valid || (value=1)" ${disabledInp}
@@ -231,7 +231,7 @@ export class DR_DESTRUCTION {
 		// insert element after dicerecharge if it exists, otherwise after uses-per.
 		let afterThis = html[0].querySelector(".form-group.dicerecharge");
 		if(!afterThis) afterThis = html[0].querySelector(".form-group.uses-per");
-		afterThis.parentNode.insertBefore(div, afterThis.nextSibling);
+		afterThis.after(div);
 		itemSheet.setPosition();
 	}
 	
@@ -263,9 +263,13 @@ export class DR_DESTRUCTION {
 		new Dialog({
 			title: item.name,
 			content: `
-				<p style="text-align:center;"><img src="${item.img}" style="width: 35%; border: none" /></p><hr>
+				<p style="text-align:center;">
+					<img src="${item.img}" style="width: 35%; border: none" />
+				</p>
+				<hr>
 				<p>${game.i18n.format("DICERECHARGE.Item.HasReachedZeroCharges", {itemName: item.name})}</p>
-				<p>${dialogMessage}</p><hr>`,
+				<p>${dialogMessage}</p>
+				<hr>`,
 			buttons: {
 				roll: {
 					icon: `<i class="fas fa-check"></i>`,
@@ -398,9 +402,11 @@ export class DR_DESTRUCTION {
 		// if the item passes the checks, get the item's old and new limited uses value.
 		const oldValue = foundry.utils.getProperty(item, "system.uses.value");
 		const newValue = foundry.utils.getProperty(data, "system.uses.value");
+		console.log(oldValue, newValue);
 
 		// only flag for destruction if going from NOT 0/null to 0/null.
-		if(![0, null].includes(oldValue) && [0, null].includes(newValue)){
+		// include NaN for when editing on the sheet, weirdly.
+		if(![0, null].includes(oldValue) && [0, null, NaN].includes(newValue)){
 			context[MODULE] = {destroy: true};
 		}
 	}
