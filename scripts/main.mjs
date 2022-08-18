@@ -9,16 +9,54 @@ export class DR_MAIN {
 	
 	/* Add "dawn" and "dusk" recharge methods. */
 	static _setUpLimitedUsePeriods = () => {
-		const periods = foundry.utils.duplicate(CONFIG.DND5E.limitedUsePeriods);
+		const oldPeriods = foundry.utils.duplicate(CONFIG.DND5E.limitedUsePeriods);
 		
 		// localize
 		CONSTANTS.TIME_PERIODS["dawn"] = game.i18n.localize("DICERECHARGE.Time.Dawn");
 		CONSTANTS.TIME_PERIODS["dusk"] = game.i18n.localize("DICERECHARGE.Time.Dusk");
+
+		const limitedUsePeriods = foundry.utils.mergeObject(oldPeriods, CONSTANTS.TIME_PERIODS);
 		
-		CONFIG.DND5E.limitedUsePeriods = foundry.utils.mergeObject(periods, CONSTANTS.TIME_PERIODS);
+		CONFIG.DND5E.limitedUsePeriods = limitedUsePeriods;
 		
-		// set up CONSTANTS.DIE_TYPES.infty while we're at it.
-		CONSTANTS.DIE_TYPES.infty = game.i18n.localize("DICERECHARGE.ItemSheet.Always");
+	}
+
+	// flag item when it (properly) runs out of charges for destruction and/or special.
+	static _flagForNoChargesLeft = (item, data, context) => {
+		// bail out if the item is not owned by an actor.
+		if(!item.actor) return;
+		// get old and new limited uses values.
+		const oldValue = foundry.utils.getProperty(item, "system.uses.value");
+		const newValue = foundry.utils.getProperty(data, "system.uses.value");
+		// only flag if going from NOT 0/null to 0/null.
+		// include NaN for when editing on the sheet, weirdly.
+		if([0, null].includes(oldValue)) return;
+		if(![0, null, NaN].includes(newValue)) return;
+
+		// set initially to false.
+		const destroy = this.getDestructionProperty(item);
+		const special = this.getSpecialEventProperty(item);
+		
+		context[MODULE] = {destroy, special};
+	}
+	// when an item runs out of charges, get whether it should trigger destruction.
+	static getDestructionProperty(item){
+		// the itemType is not valid for destruction.
+		if(!DR_DESTRUCTION._applicableItemTypeForDestruction(item)) return false;
+		// the item is not set to be destroyed.
+		if(!item.getFlag(MODULE, "destroy.check")) return false;
+		// the item actually does not show the destruction config.
+		if(!DR_DESTRUCTION._validRecoveryMethodForDestruction(item)) return false;
+		return true;
+	}
+	// when an item runs out of charges, get whether it should trigger special recovery.
+	static getSpecialEventProperty(item){
+		const flag = item.getFlag(MODULE, "special-event.active");
+		if(!flag) return false;
+
+		const {active, die, formula, threshold} = flag;
+		if(!active || !die || !formula || !threshold) return false;
+		return true;
 	}
 }
 
@@ -67,12 +105,12 @@ export class DR_CHARGING {
 	}
 
 	// recharge a singular item. Return an evaluated roll, and old and new values.
-	static _getRechargeValues = async (item) => {
+	static _getRechargeValues = async (item, formulaOverride) => {
 		// get the item's uses values.
 		const {value, max} = item.system.uses;
 		
 		// get the item's recovery formula.
-		const formulaFlag = item.getFlag(MODULE, "recovery-formula");
+		const formulaFlag = formulaOverride ? formulaOverride : item.getFlag(MODULE, "recovery-formula");
 		
 		// replace formula data with actor roll data.
 		const formula = Roll.replaceFormulaData(formulaFlag, item.getRollData());
@@ -86,7 +124,7 @@ export class DR_CHARGING {
 	}
 	
 	// return true or false whether item is valid for dicerecharge.
-	static _validForRecharging = (item, time) => {
+	static _validForRecharging = (item, time, formula) => {
 		// item must be an owned item.
 		if(!item.actor) return false;
 		
@@ -98,7 +136,8 @@ export class DR_CHARGING {
 		if(!item.hasLimitedUses) return false;
 		
 		// the item must have a valid formula in the flag.
-		const flag = item.getFlag(MODULE, "recovery-formula") ?? "";
+		let flag = item.getFlag(MODULE, "recovery-formula") ?? "";
+		if(formula) flag = item.getFlag(MODULE, "special-event.formula") ?? "";
 		if(!Roll.validate(flag)) return false;
 		
 		// get the time of day triggered.
@@ -119,37 +158,113 @@ export class DR_CHARGING {
 	}
 
 	/* Add the charge recovery fields to item sheet. */
-	static _addChargeRecoveryField = (sheet, html) => {
+	static _addChargeRecoveryField = async (sheet, html) => {
 
 		// find the form-fields under which to place the new element.
 		const per = html[0].querySelector(".form-group.uses-per");
 
 		if(per){
 			const item = sheet.object;
-
+			const specialSelected = item.getFlag(MODULE, "special-event.die") ?? "d20";
+			Handlebars.registerHelper("ifeq", function(one){
+				return one == specialSelected ? "selected" : "";
+			});
+			
 			// dont even bother if the recovery method is not one of those allowed.
 			const recovery_method = foundry.utils.getProperty(item, "system.uses.per");
 			if(!DR_MAIN._moduleTimePeriods.includes(recovery_method)) return;
 			
-			// get the current recovery formula, if any.
-			const recoveryFormula = sheet.item.getFlag(MODULE, "recovery-formula") ?? "";
-			
-			// create the new html element in the item's sheet.
-			const div = document.createElement("DIV");
-			div.classList.add("form-group", "dicerecharge");
-			const label = game.i18n.localize("DICERECHARGE.ItemSheet.RecoveryFormula");
-			const name = `flags.${MODULE}.recovery-formula`;
-			div.innerHTML = `
-				<label>${label}</label>
-				<div class="form-fields">
-					<input type="text" name="${name}" value="${recoveryFormula}">
-				</div>`;
-			// insert.
-			per.after(div);
+			const template = "/modules/dicerecharge/templates/recharge.html";
+			const templateValues = {
+				"recovery-label": game.i18n.localize("DICERECHARGE.ItemSheet.RecoveryFormula"),
+				"recovery-formula": item.getFlag(MODULE, "recovery-formula") ?? "",
+				specialSep: game.i18n.localize("DICERECHARGE.ItemSheet.Special"),
+				special: !!item.getFlag(MODULE, "special-event.active"),
+				"special-label": game.i18n.localize("DICERECHARGE.ItemSheet.SpecialEvent"),
+				"special-formula": item.getFlag(MODULE, "special-event.formula") ?? "",
+				labelIf: game.i18n.localize("DICERECHARGE.ItemSheet.If"),
+				specialDice: ["d2", "d3", "d4", "d5", "d6", "d8", "d10", "d12", "d20", "d100"],
+				specialSelected,
+				"special-threshold": item.getFlag(MODULE, "special-event.threshold") ?? 20,
+				"recovery-label-title": game.i18n.localize("DICERECHARGE.ItemSheet.Title.RecoveryLabel"),
+				"special-label-title": game.i18n.localize("DICERECHARGE.ItemSheet.Title.SpecialLabel")
+			}
+			const temp = document.createElement("DIV");
+			temp.innerHTML = await renderTemplate(template, templateValues);
+			per.after(temp);
 			sheet.setPosition();
+
 		}
 	}
 
+
+
+}
+
+export class DR_SPECIAL {
+	// get special recovery prompt message.
+	static _getSpecialPromptMessage = (die, threshold, formula) => {
+		const faces = die.split("d")[1];
+		const max_only = threshold === Number(faces);
+		let string = "DICERECHARGE.RollToSpecial.DialogContentMax";
+		if(!max_only) string = "DICERECHARGE.RollToSpecial.DialogContentBelowMax";
+		return game.i18n.format(string, {die, threshold, formula});
+	}
+
+	// prompt special recovery of an item.
+	static _specialRecoverItem = async (item, data, context, userId) => {
+		// bail out if preUpdate hook has not flagged this for special.
+		const flagged_for_special = foundry.utils.getProperty(context, `${MODULE}.special`);
+		if(!flagged_for_special) return;
+		
+		// dont run this for anyone but the one updating the item.
+		if(userId !== game.user.id) return;
+		
+		// get the values we need to use a lot.
+		const {active, die, formula, threshold} = item.getFlag(MODULE, "special-event");
+
+		const manualRoll = !!game.settings.get(MODULE, CONSTANTS.SETTING_NAMES.SPECIAL_MANUAL);
+		if(!manualRoll){
+			return rollSpecialRecovery();
+		}
+		else{
+			const stringDescription = "DICERECHARGE.Item.HasReachedZeroCharges";
+			const stringLabel = "DICERECHARGE.Item.RollDie";
+			const formulaReplacedData = Roll.replaceFormulaData(formula, item.getRollData());
+			const dialogMessage = this._getSpecialPromptMessage(die, threshold, formulaReplacedData);
+
+			// create the dialog.
+			new Dialog({
+				title: item.name,
+				content: `
+					<p style="text-align:center;">
+						<img src="${item.img}" style="width: 35%; border: none" />
+					</p>
+					<hr>
+					<p>${game.i18n.format(stringDescription, {itemName: item.name})}</p>
+					<p>${dialogMessage}</p>
+					<hr>`,
+				buttons: {
+					roll: {
+						icon: `<i class="fas fa-dice"></i>`,
+						label: game.i18n.format(stringLabel, {die}),
+						callback: async () => {
+							return rollSpecialRecovery();
+						}
+					}
+				},
+				default: "roll"
+			}).render(true, {height: "100%"});
+		}
+
+		async function rollSpecialRecovery(){
+			const {rolls: [{total}]} = await new Roll(`1${die}`).toMessage({
+				flavor: game.i18n.format("DICERECHARGE.RechargeMessage.Special", {item: item.name}),
+				speaker: ChatMessage.getSpeaker({actor: item.actor})
+			});
+			if(total >= threshold) return DR_FUNCTIONS.rechargeItem(item, false, formula);
+		}
+	}
 }
 
 export class DR_DESTRUCTION {
@@ -185,7 +300,7 @@ export class DR_DESTRUCTION {
 	}
 
 	/* Add the destruction fields to item sheet. */
-	static _addDestructionField = (itemSheet, html) => {
+	static _addDestructionField = async (itemSheet, html) => {
 		// dont even bother if the item's type is not allowed.
 		if(!DR_DESTRUCTION._applicableItemTypeForDestruction(itemSheet.item)) return;
 		
@@ -193,45 +308,43 @@ export class DR_DESTRUCTION {
 		if(!DR_DESTRUCTION._validRecoveryMethodForDestruction(itemSheet.item)) return;
 		
 		// get the current destruction configuration, if any.
-		const check = !!itemSheet.item.getFlag(MODULE, "destroy.check");
 		const die = itemSheet.item.getFlag(MODULE, "destroy.die") ?? "d20";
-		const threshold = itemSheet.item.getFlag(MODULE, "destroy.threshold") ?? 1;
+		const enabled = !!itemSheet.item.getFlag(MODULE, "destroy.check");
 		
-		// create the new html element in the item's sheet.
-		const div = document.createElement("div");
-		div.setAttribute("class", "form-group destruction");
-
-		// template vars.
-		const options = Object.entries(CONSTANTS.DIE_TYPES).reduce((acc, [key, value]) => {
-			const selected = die === key ? "selected" : "";
-			return acc + `<option value="${key}" ${selected}>${value}</option>`;
-		}, ``);
-
-		// the elements of the row:
-		const label = game.i18n.localize("DICERECHARGE.ItemSheet.ItemDestruction");
-		const nameCheck = `flags.${MODULE}.destroy.check`;
-		const sep = game.i18n.localize("DICERECHARGE.ItemSheet.DestroyedIf");
-		const nameDie = `flags.${MODULE}.destroy.die`;
-		const nameThres = `flags.${MODULE}.destroy.threshold`;
-		const value = (die === "infty" || !check) ? "" : threshold ? threshold : 1;
-		const disabledInp = (die === "infty" || !check) ? "disabled" : "";
-		div.innerHTML = `
-			<label>${label}</label>
-			<div class="form-fields">
-				<input type="checkbox" name="${nameCheck}" ${check ? "checked" : ""}>
-				<span class="sep dicerecharge">${sep}</span>
-				<select name="${nameDie}" ${!check ? "disabled" : ""}>${options}</select>
-				<span class="sep dicerecharge">&le;</span>
-				<input
-					type="number" name="${nameThres}" data-dtype="number"
-					value="${value}" min="1" oninput="validity.valid || (value=1)" ${disabledInp}
-				>
-			</div>`;
+		Handlebars.registerHelper("disableFields", function(){
+			return !enabled ? "disabled" : "";
+		});
+		Handlebars.registerHelper("destroyDie", function(d){
+			return d === die ? "selected" : "";
+		});
 		
+		const dieOptions = [];
+		for(let d of [2, 3, 4, 5, 6, 8, 10, 12, 20, 100]){
+			dieOptions.push({key: `d${d}`, label: `d${d}`});
+		}
+		dieOptions.push({
+			key: "infty",
+			label: game.i18n.localize("DICERECHARGE.ItemSheet.Always")});
+		
+		const template = "/modules/dicerecharge/templates/destroy.html";
+		const templateValues = {
+			destroyLabel: game.i18n.localize("DICERECHARGE.ItemSheet.ItemDestruction"),
+			en: enabled,
+			destroyIfLabel: game.i18n.localize("DICERECHARGE.ItemSheet.DestroyedIf"),
+			dieOptions,
+			threshold: itemSheet.item.getFlag(MODULE, "destroy.threshold") ?? 1,
+			"destruction-label-title": game.i18n.localize("DICERECHARGE.ItemSheet.Title.DestructionLabel"),
+			//rollDieType: die,
+		}
+
+		const temp = document.createElement("DIV");
+		temp.innerHTML = await renderTemplate(template, templateValues);
 		// insert element after dicerecharge if it exists, otherwise after uses-per.
-		let afterThis = html[0].querySelector(".form-group.dicerecharge");
+
+		let afterThis = html[0].querySelector(".form-group.dicerecharge-special");
+		if(!afterThis) afterThis = html[0].querySelector(".form-group.dicerecharge");
 		if(!afterThis) afterThis = html[0].querySelector(".form-group.uses-per");
-		afterThis.after(div);
+		afterThis.after(temp);
 		itemSheet.setPosition();
 	}
 	
@@ -243,7 +356,7 @@ export class DR_DESTRUCTION {
 	}
 	
 	// prompt destruction of an item.
-	static _destroyItems = (item, data, context, userId) => {
+	static _destroyItems = async (item, data, context, userId) => {
 		// bail out if preUpdate hook has not flagged this for destruction.
 		const flagged_for_destruction = foundry.utils.getProperty(context, `${MODULE}.destroy`);
 		if(!flagged_for_destruction) return;
@@ -258,6 +371,9 @@ export class DR_DESTRUCTION {
 		// determine if the item should roll for destruction or skip it (i.e., if die is set to "Always").
 		const roll_to_destroy = die !== "infty";
 		const dialogMessage = DR_DESTRUCTION._getDestroyPromptMessage(die, threshold, !roll_to_destroy);
+
+		const promptDialog = !!game.settings.get(MODULE, CONSTANTS.SETTING_NAMES.DESTROY_MANUAL);
+		if(!promptDialog) return testDestruction();
 		
 		// create the dialog.
 		new Dialog({
@@ -272,56 +388,51 @@ export class DR_DESTRUCTION {
 				<hr>`,
 			buttons: {
 				roll: {
-					icon: `<i class="fas fa-check"></i>`,
+					icon: `<i class="fas fa-dice"></i>`,
 					label: roll_to_destroy ? game.i18n.format("DICERECHARGE.Item.RollDie", {die}) : game.i18n.localize("DICERECHARGE.Item.DestroyItem"),
-					callback: async () => {
-						
-						// get the setting value (boolean).
-						const manualDestruction = !!game.settings.get(MODULE, CONSTANTS.SETTING_NAMES.DESTROY_MANUAL);
-						
-						// if the item destruction requires a die roll...
-						if(roll_to_destroy){
-							
-							// roll the die.
-							const roll = new Roll(`1${die}`);
-							const {total} = await roll.evaluate({async: true});
-							
-							// boolean for if it survived.
-							const survivedDestruction = total > threshold;
-							
-							// construct the flavor text.
-							let flavor = game.i18n.format("DICERECHARGE.Item.WasDestroyed", {itemName: item.name});
-							if(survivedDestruction) flavor = game.i18n.format("DICERECHARGE.Item.Survived", {itemName: item.name});
-
-							// send the roll to chat.
-							await roll.toMessage({
-								flavor,
-								speaker: ChatMessage.getSpeaker({actor: item.actor})
-							},{
-								rollMode: game.settings.get("core", "rollMode")
-							});
-							
-							// destroy item in the preferred way if it did not survive:
-							if(!survivedDestruction){
-								// execute manual or automatic deletion.
-								await DR_DESTRUCTION._deleteItemPrompt(item, manualDestruction);
-							}
-						}
-						// if the item destruction happens always...
-						else{
-							await ChatMessage.create({
-								user: game.user.id,
-								speaker: ChatMessage.getSpeaker({actor: item.actor}),
-								content: game.i18n.format("DICERECHARGE.Item.WasDestroyed", {itemName: item.name})
-							});
-							// execute manual or automatic deletion.
-							await DR_DESTRUCTION._deleteItemPrompt(item, manualDestruction);
-						}
-					}
+					callback: async () => testDestruction()
 				}
 			},
 			default: "roll"
 		}).render(true, {height: "100%"});
+
+		async function testDestruction(){
+			// get the setting value (boolean).
+			const manualDestruction = !!game.settings.get(MODULE, CONSTANTS.SETTING_NAMES.DESTROY_MANUAL);
+			// if the item destruction requires a die roll...
+			if(roll_to_destroy){
+				// roll the die.
+				const roll = new Roll(`1${die}`);
+				const {total} = await roll.evaluate({async: true});
+				// boolean for if it survived.
+				const survivedDestruction = total > threshold;
+				// construct the flavor text.
+				let flavor = game.i18n.format("DICERECHARGE.Item.WasDestroyed", {itemName: item.name});
+				if(survivedDestruction) flavor = game.i18n.format("DICERECHARGE.Item.Survived", {itemName: item.name});
+				// send the roll to chat.
+				await roll.toMessage({
+					flavor,
+					speaker: ChatMessage.getSpeaker({actor: item.actor})
+				},{
+					rollMode: game.settings.get("core", "rollMode")
+				});
+				// destroy item in the preferred way if it did not survive:
+				if(!survivedDestruction){
+					// execute manual or automatic deletion.
+					await DR_DESTRUCTION._deleteItemPrompt(item, manualDestruction);
+				}
+			}
+			// if the item destruction happens always...
+			else{
+				await ChatMessage.create({
+					user: game.user.id,
+					speaker: ChatMessage.getSpeaker({actor: item.actor}),
+					content: game.i18n.format("DICERECHARGE.Item.WasDestroyed", {itemName: item.name})
+				});
+				// execute manual or automatic deletion.
+				await DR_DESTRUCTION._deleteItemPrompt(item, manualDestruction);
+			}
+		}
 	}
 	
 	// item delete prompt, either dialog (true) or automatic (false).
@@ -383,34 +494,6 @@ export class DR_DESTRUCTION {
 			await message.setFlag("dnd5e", "itemData", item.toObject());
 		}
 	}
-	
-	// flag item for destruction depending on old and new limited uses values.
-	static _flagForDestruction = (item, data, context) => {
-		// set initially to false.
-		context[MODULE] = {destroy: false};
-		
-		/* no further checks needed if... */
-		// the itemType is not valid for destruction.
-		if(!DR_DESTRUCTION._applicableItemTypeForDestruction(item)) return;
-		// the item is not set to be destroyed.
-		if(!item.getFlag(MODULE, "destroy.check")) return;
-		// the item actually does not show the destruction config.
-		if(!DR_DESTRUCTION._validRecoveryMethodForDestruction(item)) return;
-		// the item is not owned by an actor.
-		if(!item.actor) return;
-		
-		// if the item passes the checks, get the item's old and new limited uses value.
-		const oldValue = foundry.utils.getProperty(item, "system.uses.value");
-		const newValue = foundry.utils.getProperty(data, "system.uses.value");
-		console.log(oldValue, newValue);
-
-		// only flag for destruction if going from NOT 0/null to 0/null.
-		// include NaN for when editing on the sheet, weirdly.
-		if(![0, null].includes(oldValue) && [0, null, NaN].includes(newValue)){
-			context[MODULE] = {destroy: true};
-		}
-	}
-
 }
 
 export class DR_FUNCTIONS {
@@ -435,15 +518,15 @@ export class DR_FUNCTIONS {
 	}
 
 	/* Request a recharge of a single item. */
-	static rechargeItem = async (item, notif = true) => {
+	static rechargeItem = async (item, notif = true, formula) => {
 		// bail out if invalid item.
 		if(!item) return {};
 		
 		// item must be valid for dicerecharge.
-		if(!DR_CHARGING._validForRecharging(item)) return {};
+		if(!DR_CHARGING._validForRecharging(item, undefined, formula)) return {};
 		
 		// get recharge values.
-		const [roll, value, max, total] = await DR_CHARGING._getRechargeValues(item);
+		const [roll, value, max, total] = await DR_CHARGING._getRechargeValues(item, formula);
 		
 		// get the new value it would have.
 		const newValue = Math.clamped(value + total, 0, max);

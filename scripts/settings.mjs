@@ -5,6 +5,7 @@ export function registerSettings() {
 }
 
 function _registerSettings(){
+	
 	game.settings.register(MODULE, CONSTANTS.SETTING_NAMES.DESTROY_ENABLED, {
 		name: game.i18n.localize("DICERECHARGE.Settings.DestroyEnabled.Name"),
 		hint: game.i18n.localize("DICERECHARGE.Settings.DestroyEnabled.Hint"),
@@ -36,4 +37,14 @@ function _registerSettings(){
 			requiresReload: true
 		});
 	}
+
+	game.settings.register(MODULE, CONSTANTS.SETTING_NAMES.SPECIAL_MANUAL, {
+		name: game.i18n.localize("DICERECHARGE.Settings.SpecialManual.Name"),
+		hint: game.i18n.localize("DICERECHARGE.Settings.SpecialManual.Hint"),
+		scope: "world",
+		config: true,
+		type: Boolean,
+		default: true,
+		requiresReload: true
+	});
 }

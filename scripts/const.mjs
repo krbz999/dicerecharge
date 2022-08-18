@@ -22,6 +22,7 @@ export const CONSTANTS = {
 	},
 	SETTING_NAMES: {
 		DESTROY_MANUAL: "manuallyDestroy",
-		DESTROY_ENABLED: "neverDestroy"
+		DESTROY_ENABLED: "neverDestroy",
+		SPECIAL_MANUAL: "manuallySpecial"
 	}
 }
