@@ -2,9 +2,13 @@
     white-space: nowrap;
     margin: 0 3px 0 0 !important;
 }
-[name="flags.dicerecharge.special-event.threshold"] {
+[name="flags.dicerecharge.special.threshold"] {
     flex: 0.25 !important;
 }
-[name="flags.dicerecharge.special-event.die"] {
+[name="flags.dicerecharge.special.die"] {
     flex: 0 !important;
+}
+.dicerecharge-flavor-text {
+    font-size: 12px;
+    margin-top: 5px;
 }
