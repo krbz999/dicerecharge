@@ -1,39 +1,76 @@
 {
-	"DICERECHARGE.ItemSheet.RecoveryFormula": "Recovery Formula",
-	"DICERECHARGE.ItemSheet.ItemDestruction": "Item Destruction",
-	"DICERECHARGE.ItemSheet.DestroyedIf": "Destroyed&nbsp;if&nbsp;",
-	"DICERECHARGE.ItemSheet.Always": "Always",
-	"DICERECHARGE.Table.MagicItem": "Magic Item",
-	"DICERECHARGE.Table.Old": "Old",
-	"DICERECHARGE.Table.New": "New",
-	"DICERECHARGE.Time.Dawn": "Dawn",
-	"DICERECHARGE.Time.Dusk": "Dusk",
-	"DICERECHARGE.RollToSurvive.ThresholdOne": "Roll a {die}; on a 1, the item is permanently destroyed.",
-	"DICERECHARGE.RollToSurvive.ThresholdAboveOne": "Roll a {die}; on a {threshold} or lower, the item is permanently destroyed.",
-	"DICERECHARGE.RollToSurvive.Always": "The item is permanently destroyed.",
-	"DICERECHARGE.Item.HasReachedZeroCharges": "{itemName} has reached zero charges.",
-	"DICERECHARGE.Item.RollDie": "Roll a {die}",
-	"DICERECHARGE.Item.DestroyItem": "Destroy Item",
-	"DICERECHARGE.Item.Survived": "{itemName} survived losing all its charges",
-	"DICERECHARGE.Item.WasDestroyed": "{itemName} was destroyed...",
-	"DICERECHARGE.DeleteDialog.Title": "Delete Item: {itemName}",
-	"DICERECHARGE.DeleteDialog.AreYouSure": "Are You Sure?",
-	"DICERECHARGE.DeleteDialog.Warning": "This Item will be permanently deleted and cannot be recovered.",
-	"DICERECHARGE.Yes": "Yes",
-	"DICERECHARGE.No": "No",
-	"DICERECHARGE.Settings.DiceRoll.Name": "Individual Dice Rolls",
-	"DICERECHARGE.Settings.DiceRoll.Hint": "Show individual dice rolls for each magic item instead of a table.",
-	"DICERECHARGE.Settings.DestroyEnabled.Name": "Enable Item Destruction",
-	"DICERECHARGE.Settings.DestroyEnabled.Hint": "If unchecked, items will not be destroyed at all.",
-	"DICERECHARGE.Settings.DestroyManual.Name": "Manual Item Destruction",
-	"DICERECHARGE.Settings.DestroyManual.Hint": "If checked, and Item Destruction is also enabled, players will be prompted to delete an item instead of it happening automatically.",
-	"DICERECHARGE.Settings.DestroyItemTypeConsumable.Name": "Destroy Consumables.",
-	"DICERECHARGE.Settings.DestroyItemTypeConsumable.Hint": "If checked, the item destruction feature is enabled for Consumable-type items.",
-	"DICERECHARGE.Settings.DestroyItemTypeFeat.Name": "Destroy Features.",
-	"DICERECHARGE.Settings.DestroyItemTypeFeat.Hint": "If checked, the item destruction feature is enabled for Feature-type items.",
-	"DICERECHARGE.Settings.DestroyItemTypeSpell.Name": "Destroy Spells.",
-	"DICERECHARGE.Settings.DestroyItemTypeSpell.Hint": "If checked, the item destruction feature is enabled for Spell-type items.",
-	"DICERECHARGE.RechargeMessage.Singular": "{name} recharges",
-	"DICERECHARGE.RechargeMessage.Pluralis": "{name}'s magic items recharge:",
-	"DICERECHARGE.RechargeMessage.AlreadyAtMax": "{name} had no change in limited uses."
+	"DICERECHARGE": {
+		"Time": {
+			"DAWN": "Dawn",
+			"DUSK": "Dusk"
+		},
+		"Settings": {
+			"destructionEnabled": {
+				"Name": "Enable Item Destruction",
+				"Hint": "If disabled, items will not be destroyed at all, and the values will not appear on the item sheets."
+			},
+			"destructionManual": {
+				"Name": "Manual Item Destruction",
+				"Hint": "If enabled, and Item Destruction is also enabled, players will be prompted to delete an item instead of it happening automatically."
+			},
+			"destructionSpell": {
+				"Name": "Destroy Spells",
+				"Hint": "If enabled, the item destruction feature is enabled for spells."
+			},
+			"destructionFeat": {
+				"Name": "Destroy Features",
+				"Hint": "If enabled, the item destruction feature is enabled for features."
+			},
+			"destructionConsumable": {
+				"Name": "Destroy Consumables",
+				"Hint": "If enabled, the item destruction feature is enabled for consumables."
+			},
+			"grittyScale": {
+				"Name": "Gritty Realism Recovery Rate",
+				"Hint": "The number of rolls an item should make when an actor takes a long rest when 'Gritty Realism' is enabled."
+			},
+			"specialManual": {
+				"Name": "Manual Critical Recovery",
+				"Hint": "If disabled, 'special event' rolls happen automatically."
+			}
+		},
+		"ItemSheet": {
+			"recoveryLabel": "Recovery Formula",
+			"recoveryTitle": "The item will regain limited uses using this formula",
+			"destructionLabel": "Item Destruction",
+			"destructionTitle": "The item will be destroyed when it reaches zero uses and the selected die rolls below the threshold",
+			"specialLabel": "Special Event",
+			"specialTitle": "The item will regain limited uses using this formula when it reaches zero uses and the selected die rolls above the threshold",
+
+			"special": "Special",
+			"if": "if",
+			"destroyedIf": "Destroyed if",
+			"always": "Always"
+		},
+		"Prompt": {
+			"outOfCharges": "{name} has reached zero charges.",
+			"button": "Roll a {die}",
+
+			"specialTitle": "Special Recovery",
+			"specialHigher": "Roll a {die}; on a {threshold} or higher, the item regains {formula} charges.",
+			"specialMax": "Roll a {die}; on a {threshold}, the item regains {formula} charges.",
+			"specialFlavor": "{name} rolls to regain charges",
+
+			"destructionTitle": "Destroy Item",
+			"destructionLower": "Roll a {die}; on a {threshold} or lower, the item is permanently destroyed.",
+			"destructionMin": "Roll a {die}; on a {threshold}, the item is permanently destroyed.",
+			"destructionFlavorFailure": "{name} was destroyed...",
+			"destructionFlavorSuccess": "{name} survived losing all its charges",
+			"destructionAlways": "The item is permanently destroyed."
+		},
+		"Charge": {
+			"itemRecharges": "{name} recharges",
+			"itemDecharges": "{name} loses charges",
+			"actorCharges": "{name}'s magic items recharge"
+		},
+		"Warn": {
+			"invalid": "{name} is not a valid item for recharging.",
+			"noChange": "{name} did not receive any change in limited uses."
+		}
+	}
 }

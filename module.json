@@ -1,29 +1,48 @@
 {
-    "name": "dicerecharge",
-    "title": "Z's Formulaic Recharging",
-    "description": "Adds functionality for recharging items or features using dice formula, and destroying items that reach zero uses.",
-    "system": ["dnd5e"],
-    "version": "v2.0.8",
-    "authors": [{
-		"name": "Zhell",
-		"url": "https://github.com/krbz999",
-		"discord": "Zhell#9201"
-	}],
-    "minimumCoreVersion": "9",
-    "compatibleCoreVersion": "9",
-	"minimumSystemVersion": "1.6.0",
-    "esmodules": [
-		"./setup.js",
-		"./scripts/custom-recharge.mjs"
+    "id": "dicerecharge",
+    "title": "Dice Recharge",
+    "version": "v10.0.0",
+    "authors": [
+        {
+            "name": "Zhell",
+            "url": "https://github.com/krbz999",
+            "discord": "Zhell#9201",
+            "ko-fi": "https://ko-fi.com/zhell"
+        }
     ],
-	"languages": [
-		{
-			"lang": "en",
-			"name": "English",
-			"path": "lang/en.json"
-		}
-	],
+    "compatibility": {
+        "minimum": "10",
+        "verified": "10.279",
+        "maximum": "10"
+    },
+    "esmodules": [
+        "./setup.js"
+    ],
+    "styles": [
+		    "./styles/styles.css"
+	  ],
+    "relationships": {
+        "systems": [
+            {
+                "id": "dnd5e",
+                "type": "system",
+                "manifest": "https://raw.githubusercontent.com/foundryvtt/dnd5e/master/system.json",
+                "compatibility": {}
+            }
+        ]
+    },
+    "languages": [
+        {
+            "lang": "en",
+            "name": "English",
+            "path": "lang/en.json",
+            "title": "Dice Recharge",
+            "description": "Adds functionality for recharging items or features using dice formula, and destroying items that reach zero uses."
+	      }
+    ],
     "url": "https://github.com/krbz999/dicerecharge",
-    "manifest": "https://raw.githubusercontent.com/krbz999/dicerecharge/master/module.json",
-    "download": "https://github.com/krbz999/dicerecharge/releases/download/v2.0.8/module.zip"
+    "manifest": "https://raw.githubusercontent.com/krbz999/dicerecharge/releases/latest/download/module.json",
+    "download": "https://github.com/krbz999/dicerecharge/releases/download/v10.0.0/module.zip",
+    "name": "dicerecharge",
+    "minimumCoreVersion": "10"
 }
