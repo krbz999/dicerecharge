@@ -1,7 +1,7 @@
 {
-	"id": "dicerecharge",
+    "id": "dicerecharge",
     "title": "Dice Recharge",
-	"version": "v10.0.0",
+    "version": "v10.0.0",
     "authors": [
         {
             "name": "Zhell",
@@ -15,13 +15,13 @@
         "verified": "10.279",
         "maximum": "10"
     },
-	"esmodules": [
-		"./setup.js"
-	],
-	"styles": [
-		"./styles/styles.css"
-	],
-	"relationships": {
+    "esmodules": [
+        "./setup.js"
+    ],
+    "styles": [
+		    "./styles/styles.css"
+	  ],
+    "relationships": {
         "systems": [
             {
                 "id": "dnd5e",
@@ -38,11 +38,11 @@
             "path": "lang/en.json",
             "title": "Dice Recharge",
             "description": "Adds functionality for recharging items or features using dice formula, and destroying items that reach zero uses."
-	    }
+	      }
     ],
-	"url": "https://github.com/krbz999/dicerecharge",
-	"manifest": "https://raw.githubusercontent.com/krbz999/dicerecharge/releases/latest/download/module.json",
-	"download": "https://github.com/krbz999/dicerecharge/releases/download/v10.0.0/module.zip",
+    "url": "https://github.com/krbz999/dicerecharge",
+    "manifest": "https://raw.githubusercontent.com/krbz999/dicerecharge/releases/latest/download/module.json",
+    "download": "https://github.com/krbz999/dicerecharge/releases/download/v10.0.0/module.zip",
     "name": "dicerecharge",
     "minimumCoreVersion": "10"
 }
