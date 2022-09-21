@@ -40,49 +40,46 @@ async function rollDestruction(item, die, threshold){
     return ChatMessage.create(messageData);
 }
 
-export function setup_triggerDestruction(){
+export function triggerDestruction(item, data, context, userId){
+    // bail out if preUpdate hook has not flagged this for special.
+    const destroy = context[MODULE]?.[item.id]?.destroy === true;
+    if ( !destroy ) return;
+    
+    // do not run this for anyone but the one updating the item.
+    if ( userId !== game.user.id ) return;
+    
+    // get the values we need to use a lot.
+    const { die, threshold } = item.getFlag(MODULE, "destroy");
 
-    Hooks.on("updateItem", async (item, data, context, userId) => {
-        // bail out if preUpdate hook has not flagged this for special.
-        const destroy = context[MODULE]?.[item.id]?.destroy === true;
-        if ( !destroy ) return;
-        
-        // do not run this for anyone but the one updating the item.
-        if ( userId !== game.user.id ) return;
-        
-        // get the values we need to use a lot.
-        const {check, die, threshold} = item.getFlag(MODULE, "destroy");
+    // should the prompt be manual?
+    const manualRoll = !!game.settings.get(MODULE, "destructionManual");
+    if ( !manualRoll || die === "infty" ) return rollDestruction(item, die, threshold);
 
-        // should the prompt be manual?
-        const manualRoll = !!game.settings.get(MODULE, "destructionManual");
-        if ( !manualRoll || die === "infty" ) return rollDestruction(item, die, threshold);
-
-        // trigger a prompt.
-        else {
-            const descriptionA = game.i18n.format("DICERECHARGE.Prompt.outOfCharges", {name: item.name});
-            const descriptionB = getDestructionLocale(die, threshold);
-            const title = game.i18n.localize("DICERECHARGE.Prompt.destructionTitle");
-            const label = game.i18n.format("DICERECHARGE.Prompt.button", {die});
-            
-            // create the dialog.
-            new Dialog({title, content: `
-                <p style="text-align:center;">
-                    <img src="${item.img}" style="width: 35%; border: none" />
-                </p>
-                <hr>
-                <p>${descriptionA}</p>
-                <p>${descriptionB}</p>
-                <hr>`,
-                buttons: {
-                    roll: {
-                        icon: `<i class="fas fa-dice"></i>`,
-                        label,
-                        callback: async () => {
-                            return rollDestruction(item, die, threshold);
-                        }
-                    }
-                }
-            }).render(true, {height: "100%"});
-        }
+    // trigger a prompt.
+    const descriptionA = game.i18n.format("DICERECHARGE.Prompt.outOfCharges", {
+        name: item.name
     });
+    const descriptionB = getDestructionLocale(die, threshold);
+    const title = game.i18n.localize("DICERECHARGE.Prompt.destructionTitle");
+    const label = game.i18n.format("DICERECHARGE.Prompt.button", { die });
+    
+    // create the dialog.
+    new Dialog({title, content: `
+        <p style="text-align:center;">
+            <img src="${item.img}" style="width: 35%; border: none" />
+        </p>
+        <hr>
+        <p>${descriptionA}</p>
+        <p>${descriptionB}</p>
+        <hr>`,
+        buttons: {
+            roll: {
+                icon: `<i class="fas fa-dice"></i>`,
+                label,
+                callback: async () => {
+                    return rollDestruction(item, die, threshold);
+                }
+            }
+        }
+    }).render(true, { height: "100%" });
 }
