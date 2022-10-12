@@ -6,14 +6,14 @@ import { triggerDestruction } from "./scripts/_triggerDestruction.mjs";
 import { flagItemUpdate, flagItemUsage } from "./scripts/_onItemUsage.mjs";
 
 Hooks.once("init", () => {
-    console.log("ZHELL | Initializing Dice Recharge");
-    registerSettings();
-    game.dicerecharge = {
-        rechargeItem: rechargeItem,
-        rechargeItems: rechargeItems,
-        nullifyItems: nullifyCharges,
-        maximizeItems: maximizeCharges
-    }
+  console.log("ZHELL | Initializing Dice Recharge");
+  registerSettings();
+  game.dicerecharge = {
+    rechargeItem: rechargeItem,
+    rechargeItems: rechargeItems,
+    nullifyItems: nullifyCharges,
+    maximizeItems: maximizeCharges
+  }
 });
 
 Hooks.on("renderItemSheet", itemSheetSetup);
