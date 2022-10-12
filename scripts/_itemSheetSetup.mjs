@@ -20,7 +20,7 @@ export async function itemSheetSetup(sheet, html) {
   const destructionChoices = foundry.utils.duplicate(specialChoices);
   destructionChoices["infty"] = game.i18n.localize("DICERECHARGE.ItemSheet.always");
 
-  const template = "/modules/dicerecharge/templates/sheetInputs.html";
+  const template = "/modules/dicerecharge/templates/sheetInputs.hbs";
   const { active, formula, die, threshold } = item.getFlag(MODULE, "special") ?? {};
   const { check, die: dDie, threshold: dThreshold } = item.getFlag(MODULE, "destroy") ?? {};
   const templateValues = {
