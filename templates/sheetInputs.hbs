@@ -1,0 +1,40 @@
+{{#if showSpecial}}
+<div class="form-group dicerecharge-special">
+  <label title="{{localize 'DICERECHARGE.ItemSheet.specialTitle'}}">
+    {{localize "DICERECHARGE.ItemSheet.specialLabel"}}
+  </label>
+  <div class="form-fields">
+    <input type="checkbox" name="flags.dicerecharge.special.active" {{#if specialActive}} checked {{/if}}>
+    <input type="text" name="flags.dicerecharge.special.formula" value="{{specialFormula}}" {{#unless specialActive}}disabled{{/unless}}>
+    <span class="sep dicerecharge">
+      {{localize "DICERECHARGE.ItemSheet.if"}}
+    </span>
+    <select name="flags.dicerecharge.special.die" {{#unless specialActive}} disabled {{/unless}}>
+      {{selectOptions specialChoices selected=specialSelected localize=true}}
+    </select>
+    <span class="sep dicerecharge">&ge;</span>
+    <input type="number" data-dtype="Number" name="flags.dicerecharge.special.threshold" value="{{specialThreshold}}"
+      {{#unless specialActive}} disabled {{/unless}}>
+  </div>
+</div>
+{{/if}}
+
+{{#if showDestruction}}
+<div class="form-group destruction">
+  <label title="{{localize 'DICERECHARGE.ItemSheet.destructionTitle'}}">
+    {{localize "DICERECHARGE.ItemSheet.destructionLabel"}}
+  </label>
+  <div class="form-fields">
+    <input type="checkbox" name="flags.dicerecharge.destroy.check" {{#if destructionEnabled}} checked {{/if}}>
+    <span class="sep dicerecharge">
+      {{localize "DICERECHARGE.ItemSheet.destroyedIf"}}
+    </span>
+    <select name="flags.dicerecharge.destroy.die" {{#unless destructionEnabled}} disabled {{/unless}}>
+      {{selectOptions destructionChoices selected=destructionSelected localize=true}}
+    </select>
+    <span class="sep dicerecharge">&le;</span>
+    <input type="number" data-dtype="Number" name="flags.dicerecharge.destroy.threshold"
+      value="{{destructionThreshold}}" {{#unless destructionEnabled}} disabled {{/unless}}>
+  </div>
+</div>
+{{/if}}
