@@ -1,4 +1,4 @@
-import { ALWAYS_TYPES, MODULE, OPTIONAL_TYPES } from "./_constants.mjs";
+import {ALWAYS_TYPES, MODULE, OPTIONAL_TYPES} from "./_constants.mjs";
 
 /*
     HELPER FUNCTIONS FOR WHETHER SPECIAL / DESTRUCTION
@@ -28,7 +28,7 @@ export function validForSpecial(item) {
   const isOwned = !!item.parent;
   if (!isOwned) return false;
 
-  const { active, formula } = item.getFlag(MODULE, "special") ?? {};
+  const {active, formula} = item.getFlag(MODULE, "special") ?? {};
   if (!active) return false;
 
   const validFormula = Roll.validate(formula);
@@ -68,7 +68,7 @@ export function validForDestruction(item) {
   const isOwned = !!item.parent;
   if (!isOwned) return false;
 
-  const { check } = item.getFlag(MODULE, "destroy") ?? {};
+  const {check} = item.getFlag(MODULE, "destroy") ?? {};
   if (!check) return false;
 
   return true;
@@ -79,12 +79,12 @@ export function validForDestruction(item) {
     WHEN AN ITEM ROLLS SPECIAL EVENT.
 */
 
-export async function getRechargeRoll(item, { formula, scale }) {
+export async function getRechargeRoll(item, {formula, scale}) {
   const expression = formula ?? item.system.uses.recovery;
   const upscale = scale ?? 1;
 
   // create the roll.
   const roll = new Roll(expression, item.getRollData());
-  roll.alter(upscale, 0, { multiplyNumeric: true });
-  return roll.evaluate({ async: true });
+  roll.alter(upscale, 0, {multiplyNumeric: true});
+  return roll.evaluate({async: true});
 }

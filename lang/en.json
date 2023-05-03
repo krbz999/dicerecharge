@@ -1,58 +1,36 @@
 {
-  "DICERECHARGE": {
-    "Settings": {
-      "destructionEnabled": {
-        "Name": "Enable Item Destruction",
-        "Hint": "If disabled, items will not be destroyed at all, and the values will not appear on the item sheets."
-      },
-      "destructionManual": {
-        "Name": "Manual Item Destruction",
-        "Hint": "If enabled, and Item Destruction is also enabled, players will be prompted to delete an item instead of it happening automatically."
-      },
-      "destructionSpell": {
-        "Name": "Destroy Spells",
-        "Hint": "If enabled, the item destruction feature is enabled for spells."
-      },
-      "destructionFeat": {
-        "Name": "Destroy Features",
-        "Hint": "If enabled, the item destruction feature is enabled for features."
-      },
-      "destructionConsumable": {
-        "Name": "Destroy Consumables",
-        "Hint": "If enabled, the item destruction feature is enabled for consumables."
-      },
-      "specialEnabled": {
-        "Name": "Enable Special Recovery",
-        "Hint": "If enabled, you can give items the option to recover limited uses when they reach 0 charges."
-      },
-      "specialManual": {
-        "Name": "Manual Critical Recovery",
-        "Hint": "If disabled, 'special event' rolls happen automatically."
-      }
-    },
-    "ItemSheet": {
-      "destructionLabel": "Item Destruction",
-      "destructionTitle": "The item will be destroyed when it reaches zero uses and the selected die rolls below the threshold",
-      "specialLabel": "Special Event",
-      "specialTitle": "The item will regain limited uses using this formula when it reaches zero uses and the selected die rolls above the threshold",
-      "special": "Special",
-      "if": "if",
-      "destroyedIf": "Destroyed if",
-      "always": "Always"
-    },
-    "Prompt": {
-      "outOfCharges": "{name} has reached zero charges.",
-      "button": "Roll a {die}",
-      "specialTitle": "Special Recovery",
-      "specialHigher": "Roll a {die}; on a {threshold} or higher, the item regains {formula} charges.",
-      "specialMax": "Roll a {die}; on a {threshold}, the item regains {formula} charges.",
-      "specialFlavor": "{name} rolls to regain charges",
-      "destructionTitle": "Destroy Item",
-      "destructionLower": "Roll a {die}; on a {threshold} or lower, the item is permanently destroyed.",
-      "destructionMin": "Roll a {die}; on a {threshold}, the item is permanently destroyed.",
-      "destructionFlavorFailure": "{name} was destroyed...",
-      "destructionFlavorSuccess": "{name} survived losing all its charges",
-      "destructionAlways": "The item is permanently destroyed."
-    }
-  }
+  "DICERECHARGE.ItemSheet.always": "Always",
+  "DICERECHARGE.ItemSheet.destroyedIf": "Destroyed if",
+  "DICERECHARGE.ItemSheet.destructionLabel": "Item Destruction",
+  "DICERECHARGE.ItemSheet.destructionTitle": "The item will be destroyed when it reaches zero uses and the selected die rolls below the threshold",
+  "DICERECHARGE.ItemSheet.if": "if",
+  "DICERECHARGE.ItemSheet.special": "Special",
+  "DICERECHARGE.ItemSheet.specialLabel": "Special Event",
+  "DICERECHARGE.ItemSheet.specialTitle": "The item will regain limited uses using this formula when it reaches zero uses and the selected die rolls above the threshold",
+  "DICERECHARGE.Prompt.button": "Roll a {die}",
+  "DICERECHARGE.Prompt.destructionAlways": "The item is permanently destroyed.",
+  "DICERECHARGE.Prompt.destructionFlavorFailure": "{name} was destroyed...",
+  "DICERECHARGE.Prompt.destructionFlavorSuccess": "{name} survived losing all its charges",
+  "DICERECHARGE.Prompt.destructionLower": "Roll a {die}; on a {threshold} or lower, the item is permanently destroyed.",
+  "DICERECHARGE.Prompt.destructionMin": "Roll a {die}; on a {threshold}, the item is permanently destroyed.",
+  "DICERECHARGE.Prompt.destructionTitle": "Destroy Item",
+  "DICERECHARGE.Prompt.outOfCharges": "{name} has reached zero charges.",
+  "DICERECHARGE.Prompt.specialFlavor": "{name} rolls to regain charges",
+  "DICERECHARGE.Prompt.specialHigher": "Roll a {die}; on a {threshold} or higher, the item regains {formula} charges.",
+  "DICERECHARGE.Prompt.specialMax": "Roll a {die}; on a {threshold}, the item regains {formula} charges.",
+  "DICERECHARGE.Prompt.specialTitle": "Special Recovery",
+  "DICERECHARGE.Settings.destructionConsumable.Hint": "If enabled, the item destruction feature is enabled for consumables.",
+  "DICERECHARGE.Settings.destructionConsumable.Name": "Destroy Consumables",
+  "DICERECHARGE.Settings.destructionEnabled.Hint": "If disabled, items will not be destroyed at all, and the values will not appear on the item sheets.",
+  "DICERECHARGE.Settings.destructionEnabled.Name": "Enable Item Destruction",
+  "DICERECHARGE.Settings.destructionFeat.Hint": "If enabled, the item destruction feature is enabled for features.",
+  "DICERECHARGE.Settings.destructionFeat.Name": "Destroy Features",
+  "DICERECHARGE.Settings.destructionManual.Hint": "If enabled, and Item Destruction is also enabled, players will be prompted to delete an item instead of it happening automatically.",
+  "DICERECHARGE.Settings.destructionManual.Name": "Manual Item Destruction",
+  "DICERECHARGE.Settings.destructionSpell.Hint": "If enabled, the item destruction feature is enabled for spells.",
+  "DICERECHARGE.Settings.destructionSpell.Name": "Destroy Spells",
+  "DICERECHARGE.Settings.specialEnabled.Hint": "If enabled, you can give items the option to recover limited uses when they reach 0 charges.",
+  "DICERECHARGE.Settings.specialEnabled.Name": "Enable Special Recovery",
+  "DICERECHARGE.Settings.specialManual.Hint": "If disabled, 'special event' rolls happen automatically.",
+  "DICERECHARGE.Settings.specialManual.Name": "Manual Critical Recovery"
 }

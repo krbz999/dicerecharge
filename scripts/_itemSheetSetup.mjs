@@ -1,5 +1,5 @@
-import { MODULE } from "./_constants.mjs";
-import { showDestructionOnSheet, showSpecialOnSheet } from "./_helpers.mjs";
+import {MODULE} from "./_constants.mjs";
+import {showDestructionOnSheet, showSpecialOnSheet} from "./_helpers.mjs";
 
 // Add the dicerecharge fields to item sheet.
 export async function itemSheetSetup(sheet, html) {
@@ -21,8 +21,8 @@ export async function itemSheetSetup(sheet, html) {
   destructionChoices["infty"] = game.i18n.localize("DICERECHARGE.ItemSheet.always");
 
   const template = "/modules/dicerecharge/templates/sheetInputs.hbs";
-  const { active, formula, die, threshold } = item.getFlag(MODULE, "special") ?? {};
-  const { check, die: dDie, threshold: dThreshold } = item.getFlag(MODULE, "destroy") ?? {};
+  const {active, formula, die, threshold} = item.getFlag(MODULE, "special") ?? {};
+  const {check, die: dDie, threshold: dThreshold} = item.getFlag(MODULE, "destroy") ?? {};
   const templateValues = {
     showSpecial: showSpecialOnSheet(item),
     showDestruction: showDestructionOnSheet(item),
