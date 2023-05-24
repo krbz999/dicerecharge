@@ -1,9 +1,9 @@
-import { registerSettings } from "./scripts/_settings.mjs";
-import { itemSheetSetup } from "./scripts/_itemSheetSetup.mjs";
-import { maximizeCharges, nullifyCharges, rechargeItem, rechargeItems } from "./scripts/_publicAPI.mjs";
-import { triggerSpecial } from "./scripts/_triggerSpecial.mjs";
-import { triggerDestruction } from "./scripts/_triggerDestruction.mjs";
-import { flagItemUpdate, flagItemUsage } from "./scripts/_onItemUsage.mjs";
+import {registerSettings} from "./scripts/_settings.mjs";
+import {itemSheetSetup} from "./scripts/_itemSheetSetup.mjs";
+import {maximizeCharges, nullifyCharges, rechargeItem, rechargeItems} from "./scripts/_publicAPI.mjs";
+import {triggerSpecial} from "./scripts/_triggerSpecial.mjs";
+import {triggerDestruction} from "./scripts/_triggerDestruction.mjs";
+import {flagItemUpdate, flagItemUsage} from "./scripts/_onItemUsage.mjs";
 
 Hooks.once("init", () => {
   console.log("ZHELL | Initializing Dice Recharge");

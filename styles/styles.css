@@ -11,7 +11,11 @@
   flex: 0 !important;
 }
 
-.dicerecharge-flavor-text {
-  font-size: 12px;
-  margin-top: 5px;
+.dicerecharge.dialog .dialog-content {
+  text-align: center;
+}
+
+.dicerecharge.dialog img {
+  width: 35%;
+  border: none;
 }
