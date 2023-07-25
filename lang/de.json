@@ -1,0 +1,22 @@
+{
+  "DICERECHARGE.ItemSheet.always": "Immer",
+  "DICERECHARGE.ItemSheet.destroyedIf": "Zerstört wenn",
+  "DICERECHARGE.ItemSheet.destructionLabel": "Zerstörung",
+  "DICERECHARGE.ItemSheet.destructionTitle": "Der Gegenstand wird zerstört, wenn er 0 Nutzungen erreicht und der gewählte Wurf unter dem Schwellwert liegt",
+  "DICERECHARGE.ItemSheet.if": "wenn",
+  "DICERECHARGE.ItemSheet.special": "Speziell",
+  "DICERECHARGE.ItemSheet.specialLabel": "Spezielles Ereignis",
+  "DICERECHARGE.ItemSheet.specialTitle": "Der Gegenstand erhält begrenzte Nutzungen nach dieser Formel zurück, wenn er 0 Nutzungen erreicht und der Wurf über dem Schwellwert liegt",
+  "DICERECHARGE.Prompt.button": "Wirf einen {die}",
+  "DICERECHARGE.Prompt.destructionAlways": "Der Gegenstand ist permanent zerstört.",
+  "DICERECHARGE.Prompt.destructionFlavorFailure": "{name} wurde zerstört...",
+  "DICERECHARGE.Prompt.destructionFlavorSuccess": "{name} bleibt intakt aber verliert alle Ladungen",
+  "DICERECHARGE.Prompt.destructionLower": "Wirf einen {die}; bei {threshold} oder niedriger ist der Gegegnstand permanent zerstört.",
+  "DICERECHARGE.Prompt.destructionMin": "Wirf einen {die}; bei {threshold} ist der Gegenstand permament zerstört.",
+  "DICERECHARGE.Prompt.destructionTitle": "Gegenstand zerstören",
+  "DICERECHARGE.Prompt.outOfCharges": "{name} erreicht 0 Ladungen.",
+  "DICERECHARGE.Prompt.specialFlavor": "{name} würfelt, um Ladungen zurückzugewinnen",
+  "DICERECHARGE.Prompt.specialHigher": "Wirf einen {die}; bei {threshold} oder höher erhält der Gegenstand {formula} Ladungen zurück.",
+  "DICERECHARGE.Prompt.specialMax": "Wirf einen {die}; bei {threshold} erhält der Gegenstand {formula} Ladungen zurück.",
+  "DICERECHARGE.Prompt.specialTitle": "Spezielle Wiederaufladung"
+}
