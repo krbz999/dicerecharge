@@ -10,7 +10,7 @@ class Module {
     Hooks.on("updateItem", Module.triggerSpecial);
     Hooks.on("preUpdateItem", Module._preUpdateItem);
     Hooks.on("dnd5e.preUseItem", Module._preUseItem);
-    globalThis[Module.ID] = {
+    game[Module.ID] = {
       rechargeItem: Module.rechargeItem,
       rechargeItems: Module.rechargeItems,
       nullifyItems: Module.nullifyCharges,
