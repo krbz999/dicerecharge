@@ -406,11 +406,10 @@ class Module {
     const testRoll = await new Roll(`1${die}`).evaluate({async: true});
     let roll;
     if (testRoll.total >= Number(threshold)) {
+      const uses = item.system.uses;
       roll = await Module.getRechargeRoll(item, {formula});
-      const {uses} = item.system;
       const value = Math.clamped(uses.value + roll.total, 0, uses.max);
       await item.update({"system.uses.value": value});
-      rolls.push(roll);
     }
 
     await testRoll.toMessage({
@@ -419,8 +418,13 @@ class Module {
     }, {
       rollMode: game.settings.get("core", "rollMode")
     });
+    const max = item.system.uses.value === item.system.uses.max;
     return roll?.toMessage({
       speaker: ChatMessage.implementation.getSpeaker({actor: item.actor}),
+      flavor: game.i18n.format(`DND5E.ItemRecoveryRoll${max ? "Max" : ""}`, {
+        name: item.name,
+        count: roll.total
+      })
     }, {rollMode: game.settings.get("core", "rollMode")});
   }
 
