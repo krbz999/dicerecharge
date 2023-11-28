@@ -1,3 +1,5 @@
+Interested in following along with development of any of my modules? Join the [Discord server](https://discord.gg/QAG8eWABGT). 
+
 # Dice Recharge
 
 This module is for `dnd5e` for triggering destruction of items as well as special events for some rare magic items that would regain limited uses on a roll of a die when they reach 0 charges.
