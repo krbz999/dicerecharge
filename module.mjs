@@ -205,7 +205,6 @@ class Module {
 
     if (recovery) recovery.after(div);
     else per.after(div);
-    sheet.setPosition();
   }
 
   /**
